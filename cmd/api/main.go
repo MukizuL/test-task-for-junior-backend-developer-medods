@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"example.com/taskservice/cmd/worker"
 	infrastructurepostgres "example.com/taskservice/internal/infrastructure/postgres"
 	postgresrepo "example.com/taskservice/internal/repository/postgres"
 	transporthttp "example.com/taskservice/internal/transport/http"
@@ -40,6 +41,11 @@ func main() {
 	taskHandler := httphandlers.NewTaskHandler(taskUsecase)
 	docsHandler := swaggerdocs.NewHandler()
 	router := transporthttp.NewRouter(taskHandler, docsHandler)
+	workerRecTask := worker.New(ctx, taskRepo)
+
+	go func() {
+		workerRecTask.Run()
+	}()
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,

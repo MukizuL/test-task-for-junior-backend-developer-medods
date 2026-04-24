@@ -10,6 +10,7 @@ type taskMutationDTO struct {
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
 	Status      taskdomain.Status `json:"status"`
+	DueDate     time.Time         `json:"due_date"`
 }
 
 type taskDTO struct {
@@ -17,6 +18,7 @@ type taskDTO struct {
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
 	Status      taskdomain.Status `json:"status"`
+	DueDate     time.Time         `json:"due_date"`
 	CreatedAt   time.Time         `json:"created_at"`
 	UpdatedAt   time.Time         `json:"updated_at"`
 }
@@ -27,6 +29,44 @@ func newTaskDTO(task *taskdomain.Task) taskDTO {
 		Title:       task.Title,
 		Description: task.Description,
 		Status:      task.Status,
+		DueDate:     task.DueDate,
+		CreatedAt:   task.CreatedAt,
+		UpdatedAt:   task.UpdatedAt,
+	}
+}
+
+type recurringTaskMutationDTO struct {
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
+	Frequency   taskdomain.Frequency `json:"frequency"`
+	Interval    int                  `json:"interval"`
+	StartDate   time.Time            `json:"start_date"`
+	EndDate     *time.Time           `json:"end_date"`
+}
+
+type recurringTaskDTO struct {
+	ID          int64                `json:"id"`
+	Title       string               `json:"title"`
+	Description string               `json:"description"`
+	Frequency   taskdomain.Frequency `json:"frequency"`
+	Interval    int                  `json:"interval"`
+	StartDate   time.Time            `json:"start_date"`
+	EndDate     *time.Time           `json:"end_date"`
+	LastRunAt   *time.Time           `json:"last_run_at"`
+	CreatedAt   time.Time            `json:"created_at"`
+	UpdatedAt   time.Time            `json:"updated_at"`
+}
+
+func newRecurringTaskDTO(task *taskdomain.RecurringTask) recurringTaskDTO {
+	return recurringTaskDTO{
+		ID:          task.ID,
+		Title:       task.Title,
+		Description: task.Description,
+		Frequency:   task.Frequency,
+		Interval:    task.Interval,
+		StartDate:   task.StartDate,
+		EndDate:     task.EndDate,
+		LastRunAt:   task.LastRunAt,
 		CreatedAt:   task.CreatedAt,
 		UpdatedAt:   task.UpdatedAt,
 	}
