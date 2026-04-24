@@ -53,3 +53,9 @@ http://localhost:8080/swagger/openapi.json
 - `GET /api/v1/tasks/{id}`
 - `PUT /api/v1/tasks/{id}`
 - `DELETE /api/v1/tasks/{id}`
+
+- `POST /api/v1/recurring-tasks`
+- `GET /api/v1/recurring-tasks`
+- `GET /api/v1/recurring-tasks/{id}`
+- `PUT /api/v1/recurring-tasks/{id}`
+- `DELETE /api/v1/recurring-tasks/{id}`
