@@ -3,7 +3,7 @@ package handlers
 import (
 	"time"
 
-	taskdomain "example.com/taskservice/internal/domain/task"
+	taskdomain "example.com/taskservice/internal/domain/taskdomain"
 )
 
 type taskMutationDTO struct {

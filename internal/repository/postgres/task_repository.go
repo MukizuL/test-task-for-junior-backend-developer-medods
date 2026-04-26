@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	taskdomain "example.com/taskservice/internal/domain/task"
+	taskdomain "example.com/taskservice/internal/domain/taskdomain"
 )
 
 type Repository struct {

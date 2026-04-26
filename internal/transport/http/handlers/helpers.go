@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	taskdomain "example.com/taskservice/internal/domain/task"
+	taskdomain "example.com/taskservice/internal/domain/taskdomain"
 	taskusecase "example.com/taskservice/internal/usecase/task"
 	"github.com/gorilla/mux"
 )

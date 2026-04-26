@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	taskdomain "example.com/taskservice/internal/domain/task"
+	taskdomain "example.com/taskservice/internal/domain/taskdomain"
 )
 
 func validateCreateInput(input CreateInput) (CreateInput, error) {

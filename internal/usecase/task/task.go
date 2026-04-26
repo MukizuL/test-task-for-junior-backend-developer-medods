@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	taskdomain "example.com/taskservice/internal/domain/task"
+	"example.com/taskservice/internal/domain/taskdomain"
 )
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Task, error) {

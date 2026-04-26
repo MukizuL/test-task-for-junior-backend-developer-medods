@@ -4,8 +4,10 @@ import (
 	"context"
 	"time"
 
-	taskdomain "example.com/taskservice/internal/domain/task"
+	"example.com/taskservice/internal/domain/taskdomain"
 )
+
+//go:generate mockgen -source=ports.go -destination=mocks/ports.go -package=mocks -mock_names=Repository=MockRepo,Usecase=MockUsecase
 
 type Repository interface {
 	Create(ctx context.Context, task *taskdomain.Task) (*taskdomain.Task, error)
