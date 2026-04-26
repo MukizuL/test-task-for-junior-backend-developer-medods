@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -18,6 +19,7 @@ import (
 	swaggerdocs "example.com/taskservice/internal/transport/http/docs"
 	httphandlers "example.com/taskservice/internal/transport/http/handlers"
 	"example.com/taskservice/internal/usecase/task"
+	"golang.org/x/sync/errgroup"
 )
 
 func main() {
@@ -29,6 +31,8 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
+
+	g, gCtx := errgroup.WithContext(ctx)
 
 	pool, err := infrastructurepostgres.Open(ctx, cfg.DatabaseDSN)
 	if err != nil {
@@ -42,11 +46,11 @@ func main() {
 	taskHandler := httphandlers.NewTaskHandler(taskUsecase)
 	docsHandler := swaggerdocs.NewHandler()
 	router := transporthttp.NewRouter(taskHandler, docsHandler)
-	workerRecTask := worker.New(ctx, taskRepo, clock.RealClock{})
+	workerRecTask := worker.New(gCtx, taskRepo, clock.RealClock{})
 
-	go func() {
-		workerRecTask.Run()
-	}()
+	g.Go(func() error {
+		return workerRecTask.Run()
+	})
 
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
@@ -55,7 +59,7 @@ func main() {
 	}
 
 	go func() {
-		<-ctx.Done()
+		<-gCtx.Done()
 
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
@@ -67,8 +71,15 @@ func main() {
 
 	logger.Info("http server started", "addr", cfg.HTTPAddr)
 
-	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		logger.Error("listen and serve", "error", err)
+	g.Go(func() error {
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+		return nil
+	})
+
+	if err := g.Wait(); err != nil {
+		logger.ErrorContext(gCtx, "error", err)
 		os.Exit(1)
 	}
 }

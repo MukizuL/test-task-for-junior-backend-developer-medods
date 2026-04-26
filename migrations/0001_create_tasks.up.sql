@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS recurring_tasks (
     id BIGSERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
-    status TEXT NOT NULL,
     frequency TEXT NOT NULL,
     interval BIGINT NOT NULL CHECK (interval > 0),
     start_date TIMESTAMPTZ NOT NULL,

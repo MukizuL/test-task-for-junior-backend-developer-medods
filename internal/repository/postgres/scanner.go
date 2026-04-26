@@ -46,6 +46,7 @@ func scanRecurringTask(scanner taskScanner) (*taskdomain.RecurringTask, error) {
 		&task.EndDate,
 		&task.LastRunAt,
 		&task.CreatedAt,
+		&task.UpdatedAt,
 	); err != nil {
 		return nil, err
 	}

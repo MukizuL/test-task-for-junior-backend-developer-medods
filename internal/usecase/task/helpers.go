@@ -57,6 +57,9 @@ func validateCreateRecurringInput(input CreateRecurringInput) (CreateRecurringIn
 		return CreateRecurringInput{}, fmt.Errorf("%w: invalid interval", ErrInvalidInput)
 	}
 
+	if input.StartDate.IsZero() {
+		return CreateRecurringInput{}, fmt.Errorf("%w: start date is required", ErrInvalidInput)
+	}
 	if input.EndDate != nil && input.StartDate.After(*input.EndDate) {
 		return CreateRecurringInput{}, fmt.Errorf("%w: invalid end date", ErrInvalidInput)
 	}
