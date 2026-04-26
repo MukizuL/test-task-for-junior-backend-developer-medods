@@ -1,6 +1,6 @@
 package postgres
 
-import taskdomain "example.com/taskservice/internal/domain/taskdomain"
+import "example.com/taskservice/internal/domain/taskdomain"
 
 type taskScanner interface {
 	Scan(dest ...any) error

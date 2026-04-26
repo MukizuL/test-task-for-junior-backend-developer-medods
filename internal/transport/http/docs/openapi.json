@@ -169,6 +169,10 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "new"
+          },
+          "due_date": {
+            "type": "string",
+            "example": "2026-04-24T00:00:00+07:00"
           }
         }
       },
@@ -188,6 +192,10 @@
             "type": "string",
             "enum": ["new", "in_progress", "done"],
             "example": "in_progress"
+          },
+          "due_date": {
+            "type": "string",
+            "example": "2026-04-24T00:00:00+07:00"
           }
         }
       },
@@ -195,6 +203,7 @@
         "type": "object",
         "properties": {
           "id": { "type": "integer", "format": "int64", "example": 1 },
+          "recurring_task_id": {"type": "integer", "format": "int64", "example": 1},
           "title": { "type": "string", "example": "Prepare release" },
           "description": {
             "type": "string",

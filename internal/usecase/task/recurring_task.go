@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	taskdomain "example.com/taskservice/internal/domain/taskdomain"
+	"example.com/taskservice/internal/domain/taskdomain"
 )
 
 func (s *Service) CreateRecurringTask(ctx context.Context, input CreateRecurringInput) (*taskdomain.RecurringTask, error) {
