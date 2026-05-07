@@ -23,6 +23,12 @@ jobs:
 
     - name: Build
       run: go build -v ./...
+      
+    - name: Install mockgen
+      run: go install github.com/golang/mock/mockgen@latest
 
+    - name: Generate mocks
+      run: go generate ./...
+      
     - name: Test
       run: go test -v ./...
