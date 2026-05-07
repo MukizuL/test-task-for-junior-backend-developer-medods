@@ -79,7 +79,7 @@ func main() {
 	})
 
 	if err := g.Wait(); err != nil {
-		logger.ErrorContext(gCtx, "error", err)
+		logger.ErrorContext(gCtx, "Stopping...", "error", err)
 		os.Exit(1)
 	}
 }
