@@ -46,10 +46,10 @@ func main() {
 	taskHandler := httphandlers.NewTaskHandler(taskUsecase)
 	docsHandler := swaggerdocs.NewHandler()
 	router := transporthttp.NewRouter(taskHandler, docsHandler)
-	workerRecTask := worker.New(gCtx, taskRepo, clock.RealClock{})
+	workerRecTask := worker.New(taskRepo, clock.RealClock{}, logger)
 
 	g.Go(func() error {
-		return workerRecTask.Run()
+		return workerRecTask.Run(gCtx)
 	})
 
 	server := &http.Server{

@@ -2,6 +2,8 @@ package worker
 
 import (
 	"context"
+	"log/slog"
+	"os"
 	"testing"
 	"time"
 
@@ -51,8 +53,8 @@ func TestWorker_GeneratesTask(t *testing.T) {
 						}, nil
 					}).Times(2)
 
-				m.EXPECT().Create(gomock.Any(), gomock.AssignableToTypeOf(&taskdomain.Task{})).
-					DoAndReturn(func(ctx context.Context, task *taskdomain.Task) (*taskdomain.Task, error) {
+				m.EXPECT().CreateAndUpdateLastRunAt(gomock.Any(), gomock.AssignableToTypeOf(&taskdomain.Task{}), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, task *taskdomain.Task, next time.Time) error {
 						assert.Equal(t, int64(1), *task.RecurringTaskID)
 						assert.Equal(t, "Task 1", task.Title)
 						assert.Equal(t, "Description 1", task.Description)
@@ -63,13 +65,8 @@ func TestWorker_GeneratesTask(t *testing.T) {
 						assert.Equal(t, expectedDue, task.DueDate)
 
 						call++
-
-						return task, nil
-					}).Times(2)
-
-				m.EXPECT().UpdateLastRunAt(gomock.Any(), int64(1), gomock.Any()).
-					DoAndReturn(func(ctx context.Context, id int64, next time.Time) error {
 						lastRunAt = &next
+
 						return nil
 					}).Times(2)
 			},
@@ -90,9 +87,14 @@ func TestWorker_GeneratesTask(t *testing.T) {
 				tt.mockStorage(mockRepo)
 			}
 
-			worker := New(context.Background(), mockRepo, tt.c)
+			logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+				Level: slog.LevelInfo,
+			}))
 
-			err := worker.RunOnce()
+			ctx := context.Background()
+			worker := New(mockRepo, tt.c, logger)
+
+			err := worker.RunOnce(ctx)
 			if tt.want.firstRun != nil {
 				assert.Error(t, err)
 			} else {
@@ -101,7 +103,7 @@ func TestWorker_GeneratesTask(t *testing.T) {
 
 			tt.c.Add(tt.timeSkip)
 
-			err = worker.RunOnce()
+			err = worker.RunOnce(ctx)
 			if tt.want.secondRun != nil {
 				assert.Error(t, err)
 			} else {

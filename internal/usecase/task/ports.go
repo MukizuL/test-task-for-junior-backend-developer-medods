@@ -16,12 +16,12 @@ type Repository interface {
 	Delete(ctx context.Context, id int64) error
 	List(ctx context.Context) ([]taskdomain.Task, error)
 	GetDueRecurringTasks(ctx context.Context) ([]taskdomain.RecurringTask, error)
-	UpdateLastRunAt(ctx context.Context, id int64, next time.Time) error
 	CreateRecurringTask(ctx context.Context, task *taskdomain.RecurringTask) (*taskdomain.RecurringTask, error)
 	GetRecurringTaskByID(ctx context.Context, id int64) (*taskdomain.RecurringTask, error)
 	UpdateRecurringTask(ctx context.Context, task *taskdomain.RecurringTask) (*taskdomain.RecurringTask, error)
 	DeleteRecurringTask(ctx context.Context, id int64) error
 	ListRecurringTasks(ctx context.Context) ([]taskdomain.RecurringTask, error)
+	CreateAndUpdateLastRunAt(ctx context.Context, task *taskdomain.Task, next time.Time) error
 }
 
 type Usecase interface {

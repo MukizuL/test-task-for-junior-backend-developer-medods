@@ -42,17 +42,6 @@ func (r *Repository) GetDueRecurringTasks(ctx context.Context) ([]taskdomain.Rec
 	return result, nil
 }
 
-func (r *Repository) UpdateLastRunAt(ctx context.Context, id int64, next time.Time) error {
-	const query = `
-		UPDATE recurring_tasks
-		SET last_run_at = $1
-		WHERE id = $2 AND (last_run_at IS NULL OR last_run_at < $1)
-	`
-
-	_, err := r.pool.Exec(ctx, query, next, id)
-	return err
-}
-
 func (r *Repository) CreateRecurringTask(ctx context.Context, task *taskdomain.RecurringTask) (*taskdomain.RecurringTask, error) {
 	const query = `
 		INSERT INTO recurring_tasks (title,	description, frequency,	interval, start_date, end_date,	last_run_at, created_at, updated_at)

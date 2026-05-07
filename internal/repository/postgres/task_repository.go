@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -125,4 +126,41 @@ func (r *Repository) List(ctx context.Context) ([]taskdomain.Task, error) {
 	}
 
 	return tasks, nil
+}
+
+func (r *Repository) CreateAndUpdateLastRunAt(ctx context.Context, task *taskdomain.Task, next time.Time) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	const createQuery = `
+		INSERT INTO tasks (rec_task_id, title, description, status, due_date, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING
+	`
+
+	result, err := tx.Exec(ctx, createQuery, task.RecurringTaskID, task.Title, task.Description, task.Status, task.DueDate, task.CreatedAt, task.UpdatedAt)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return nil
+	}
+
+	const updateLastRunAtQuery = `
+		UPDATE recurring_tasks
+		SET last_run_at = $1
+		WHERE id = $2 AND (last_run_at IS NULL OR last_run_at < $1)
+	`
+
+	_, err = tx.Exec(ctx, updateLastRunAtQuery, next, task.RecurringTaskID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }

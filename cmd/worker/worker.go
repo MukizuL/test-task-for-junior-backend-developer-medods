@@ -2,6 +2,9 @@ package worker
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"example.com/taskservice/internal/clock"
@@ -9,51 +12,74 @@ import (
 	taskUsecase "example.com/taskservice/internal/usecase/task"
 )
 
+const (
+	FrequencyDaily   taskdomain.Frequency = "daily"
+	FrequencyWeekly  taskdomain.Frequency = "weekly"
+	FrequencyMonthly taskdomain.Frequency = "monthly"
+	FrequencyYearly  taskdomain.Frequency = "yearly"
+)
+
+var (
+	errGettingRecurringTask = errors.New("error getting due recurring tasks")
+	errUnknownFrequency     = errors.New("error unknown frequency")
+)
+
 type Worker struct {
-	ctx   context.Context
-	repo  taskUsecase.Repository
-	clock clock.Clock
+	repo   taskUsecase.Repository
+	clock  clock.Clock
+	logger *slog.Logger
 }
 
-func New(ctx context.Context, repo taskUsecase.Repository, clock clock.Clock) *Worker {
+func New(repo taskUsecase.Repository, clock clock.Clock, logger *slog.Logger) *Worker {
 	return &Worker{
-		ctx:   ctx,
-		repo:  repo,
-		clock: clock,
+		repo:   repo,
+		clock:  clock,
+		logger: logger,
 	}
 }
 
-func (w *Worker) Run() error {
+func (w *Worker) Run(ctx context.Context) error {
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
-		case <-w.ctx.Done():
-			return w.ctx.Err()
+		case <-ctx.Done():
+			return ctx.Err()
 		case <-ticker.C:
-			err := w.RunOnce()
+			err := w.RunOnce(ctx)
 			if err != nil {
-				return err
+				w.logger.Error("error creating next tasks", "error", err)
+				continue
 			}
 		}
 	}
 }
 
-func (w *Worker) RunOnce() error {
+func (w *Worker) RunOnce(ctx context.Context) error {
 	now := w.clock.Now()
 
-	recTasks, err := w.repo.GetDueRecurringTasks(w.ctx)
+	recTasks, err := w.repo.GetDueRecurringTasks(ctx)
 	if err != nil {
-		return err
+		return errors.Join(errGettingRecurringTask, err)
 	}
 
 	for _, rt := range recTasks {
-		if !isDue(rt, now) {
+		yes, err := isDue(rt, now)
+		if err != nil {
+			w.logger.Error("error checking due recurring task", "error", err, "task_id", rt.ID)
 			continue
 		}
 
-		next := nextRun(rt)
+		if !yes {
+			continue
+		}
+
+		next, err := nextRun(rt)
+		if err != nil {
+			w.logger.Error("error checking next to run", "error", err, "task_id", rt.ID)
+			continue
+		}
 
 		task := taskdomain.Task{
 			RecurringTaskID: &rt.ID,
@@ -65,48 +91,48 @@ func (w *Worker) RunOnce() error {
 			UpdatedAt:       now,
 		}
 
-		_, err = w.repo.Create(w.ctx, &task)
+		err = w.repo.CreateAndUpdateLastRunAt(ctx, &task, next)
 		if err != nil {
-			return err
-		}
-		err = w.repo.UpdateLastRunAt(w.ctx, rt.ID, next)
-		if err != nil {
-			return err
+			w.logger.Error("error updating last run", "error", err, "task", task)
+			continue
 		}
 	}
 
 	return nil
 }
 
-func isDue(rt taskdomain.RecurringTask, now time.Time) bool {
+func isDue(rt taskdomain.RecurringTask, now time.Time) (bool, error) {
 	if rt.LastRunAt == nil {
-		return !rt.StartDate.After(now)
+		return !rt.StartDate.After(now), nil
 	}
 
-	next := calculateNext(rt)
-	return !next.After(now)
+	next, err := calculateNext(rt)
+	if err != nil {
+		return false, err
+	}
+	return !next.After(now), nil
 }
 
-func nextRun(rt taskdomain.RecurringTask) time.Time {
+func nextRun(rt taskdomain.RecurringTask) (time.Time, error) {
 	if rt.LastRunAt == nil {
-		return rt.StartDate
+		return rt.StartDate, nil
 	}
 	return calculateNext(rt)
 }
 
-func calculateNext(rt taskdomain.RecurringTask) time.Time {
+func calculateNext(rt taskdomain.RecurringTask) (time.Time, error) {
 	last := *rt.LastRunAt
 
 	switch rt.Frequency {
-	case "daily":
-		return last.AddDate(0, 0, rt.Interval)
-	case "weekly":
-		return last.AddDate(0, 0, 7*rt.Interval)
-	case "monthly":
-		return last.AddDate(0, rt.Interval, 0)
-	case "yearly":
-		return last.AddDate(rt.Interval, 0, 0)
+	case FrequencyDaily:
+		return last.AddDate(0, 0, rt.Interval), nil
+	case FrequencyWeekly:
+		return last.AddDate(0, 0, 7*rt.Interval), nil
+	case FrequencyMonthly:
+		return last.AddDate(0, rt.Interval, 0), nil
+	case FrequencyYearly:
+		return last.AddDate(rt.Interval, 0, 0), nil
 	default:
-		panic("unknown frequency")
+		return time.Time{}, fmt.Errorf("%w: %s", errUnknownFrequency, rt.Frequency)
 	}
 }
