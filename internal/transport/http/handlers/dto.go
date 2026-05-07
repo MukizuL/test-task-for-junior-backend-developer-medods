@@ -23,6 +23,7 @@ type taskDTO struct {
 	UpdatedAt   time.Time         `json:"updated_at"`
 }
 
+// newTaskDTO returns http response-ready struct
 func newTaskDTO(task *taskdomain.Task) taskDTO {
 	return taskDTO{
 		ID:          task.ID,
@@ -57,6 +58,7 @@ type recurringTaskDTO struct {
 	UpdatedAt   time.Time            `json:"updated_at"`
 }
 
+// newRecurringTaskDTO returns http response-ready struct
 func newRecurringTaskDTO(task *taskdomain.RecurringTask) recurringTaskDTO {
 	return recurringTaskDTO{
 		ID:          task.ID,
