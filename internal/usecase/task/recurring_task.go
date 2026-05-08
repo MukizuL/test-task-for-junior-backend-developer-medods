@@ -2,24 +2,26 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
 	"example.com/taskservice/internal/domain/taskdomain"
 )
 
 func (s *Service) CreateRecurringTask(ctx context.Context, input CreateRecurringInput) (*taskdomain.RecurringTask, error) {
-	normalized, err := validateCreateRecurringInput(input)
+	err := s.validate.Struct(input)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(ErrInvalidInput, err)
 	}
 
 	model := &taskdomain.RecurringTask{
-		Title:       normalized.Title,
-		Description: normalized.Description,
-		Frequency:   normalized.Frequency,
-		Interval:    normalized.Interval,
-		StartDate:   normalized.StartDate,
-		EndDate:     normalized.EndDate,
+		Title:       strings.TrimSpace(input.Title),
+		Description: strings.TrimSpace(input.Description),
+		Frequency:   input.Frequency,
+		Interval:    input.Interval,
+		StartDate:   input.StartDate,
+		EndDate:     input.EndDate,
 	}
 
 	now := s.now()
@@ -47,19 +49,19 @@ func (s *Service) UpdateRecurringTask(ctx context.Context, id int64, input Updat
 		return nil, fmt.Errorf("%w: id must be positive", ErrInvalidInput)
 	}
 
-	normalized, err := validateUpdateRecurringInput(input)
+	err := s.validate.Struct(input)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(ErrInvalidInput, err)
 	}
 
 	model := &taskdomain.RecurringTask{
 		ID:          id,
-		Title:       normalized.Title,
-		Description: normalized.Description,
-		Frequency:   normalized.Frequency,
-		Interval:    normalized.Interval,
-		StartDate:   normalized.StartDate,
-		EndDate:     normalized.EndDate,
+		Title:       strings.TrimSpace(input.Title),
+		Description: strings.TrimSpace(input.Description),
+		Frequency:   input.Frequency,
+		Interval:    input.Interval,
+		StartDate:   input.StartDate,
+		EndDate:     input.EndDate,
 		UpdatedAt:   s.now(),
 	}
 

@@ -131,7 +131,7 @@ func (r *Repository) List(ctx context.Context) ([]taskdomain.Task, error) {
 func (r *Repository) CreateAndUpdateLastRunAt(ctx context.Context, task *taskdomain.Task, next time.Time) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
-		return err
+		return errors.Join(errStartingTx, err)
 	}
 	defer func() {
 		_ = tx.Rollback(ctx)
@@ -144,7 +144,7 @@ func (r *Repository) CreateAndUpdateLastRunAt(ctx context.Context, task *taskdom
 
 	result, err := tx.Exec(ctx, createQuery, task.RecurringTaskID, task.Title, task.Description, task.Status, task.DueDate, task.CreatedAt, task.UpdatedAt)
 	if err != nil {
-		return err
+		return errors.Join(errCreatingTask, err)
 	}
 
 	if result.RowsAffected() == 0 {
@@ -159,8 +159,13 @@ func (r *Repository) CreateAndUpdateLastRunAt(ctx context.Context, task *taskdom
 
 	_, err = tx.Exec(ctx, updateLastRunAtQuery, next, task.RecurringTaskID)
 	if err != nil {
-		return err
+		return errors.Join(errUpdatingLastRunAt, err)
 	}
 
-	return tx.Commit(ctx)
+	err = tx.Commit(ctx)
+	if err != nil {
+		return errors.Join(errCommitingTx, err)
+	}
+
+	return nil
 }

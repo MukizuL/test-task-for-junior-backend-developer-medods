@@ -42,7 +42,7 @@ func TestWorker_GeneratesTask(t *testing.T) {
 								ID:          1,
 								Title:       "Task 1",
 								Description: "Description 1",
-								Frequency:   "daily",
+								Frequency:   taskdomain.FrequencyDaily,
 								Interval:    1,
 								StartDate:   time.Date(2026, 4, 26, 10, 0, 0, 0, time.UTC),
 								EndDate:     nil,

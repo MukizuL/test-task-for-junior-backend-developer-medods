@@ -2,22 +2,25 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
 	"example.com/taskservice/internal/domain/taskdomain"
 )
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Task, error) {
-	normalized, err := validateCreateInput(input)
+	err := s.validate.Struct(input)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(ErrInvalidInput, err)
 	}
 
 	model := &taskdomain.Task{
 		RecurringTaskID: nil,
-		Title:           normalized.Title,
-		Description:     normalized.Description,
-		Status:          normalized.Status,
+		Title:           strings.TrimSpace(input.Title),
+		Description:     strings.TrimSpace(input.Description),
+		Status:          input.Status,
+		DueDate:         input.DueDate,
 	}
 	now := s.now()
 	model.CreatedAt = now
@@ -44,17 +47,17 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 		return nil, fmt.Errorf("%w: id must be positive", ErrInvalidInput)
 	}
 
-	normalized, err := validateUpdateInput(input)
+	err := s.validate.Struct(input)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(ErrInvalidInput, err)
 	}
 
 	model := &taskdomain.Task{
 		ID:              id,
-		RecurringTaskID: &normalized.RecurringTaskID,
-		Title:           normalized.Title,
-		Description:     normalized.Description,
-		Status:          normalized.Status,
+		RecurringTaskID: &input.RecurringTaskID,
+		Title:           strings.TrimSpace(input.Title),
+		Description:     strings.TrimSpace(input.Description),
+		Status:          input.Status,
 		UpdatedAt:       s.now(),
 	}
 

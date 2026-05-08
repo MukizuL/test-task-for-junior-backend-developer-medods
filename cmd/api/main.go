@@ -19,6 +19,7 @@ import (
 	swaggerdocs "example.com/taskservice/internal/transport/http/docs"
 	httphandlers "example.com/taskservice/internal/transport/http/handlers"
 	"example.com/taskservice/internal/usecase/task"
+	"github.com/go-playground/validator/v10"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -41,8 +42,10 @@ func main() {
 	}
 	defer pool.Close()
 
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
 	taskRepo := postgresrepo.New(pool)
-	taskUsecase := task.NewService(taskRepo)
+	taskUsecase := task.NewService(taskRepo, validate)
 	taskHandler := httphandlers.NewTaskHandler(taskUsecase)
 	docsHandler := swaggerdocs.NewHandler()
 	router := transporthttp.NewRouter(taskHandler, docsHandler)

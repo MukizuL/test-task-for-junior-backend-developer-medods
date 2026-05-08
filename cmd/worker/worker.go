@@ -59,9 +59,9 @@ func (w *Worker) RunOnce(ctx context.Context) error {
 	}
 
 	for _, rt := range recTasks {
-		yes, err := isDue(rt, now)
-		if err != nil {
-			w.logger.Error("error checking due recurring task", "error", err, "task_id", rt.ID)
+		yes, errLoop := isDue(rt, now)
+		if errLoop != nil {
+			w.logger.Error("unknown frequency in isDue", "error", err, "task_id", rt.ID)
 			continue
 		}
 
@@ -69,9 +69,9 @@ func (w *Worker) RunOnce(ctx context.Context) error {
 			continue
 		}
 
-		next, err := nextRun(rt)
-		if err != nil {
-			w.logger.Error("error checking next to run", "error", err, "task_id", rt.ID)
+		next, errLoop := nextRun(rt)
+		if errLoop != nil {
+			w.logger.Error("unknown frequency in nextRun", "error", err, "task_id", rt.ID)
 			continue
 		}
 
@@ -85,9 +85,9 @@ func (w *Worker) RunOnce(ctx context.Context) error {
 			UpdatedAt:       now,
 		}
 
-		err = w.repo.CreateAndUpdateLastRunAt(ctx, &task, next)
-		if err != nil {
-			w.logger.Error("error updating last run", "error", err, "task", task)
+		errLoop = w.repo.CreateAndUpdateLastRunAt(ctx, &task, next)
+		if errLoop != nil {
+			w.logger.Error("error in CreateAndUpdateLastRunAt", "error", err, "task", task)
 			continue
 		}
 	}
