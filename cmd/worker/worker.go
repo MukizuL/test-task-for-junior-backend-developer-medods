@@ -1,3 +1,4 @@
+// Package worker implements subroutine which checks database for tasks due for creation and then creates them.
 package worker
 
 import (
@@ -101,6 +102,7 @@ func (w *Worker) RunOnce(ctx context.Context) error {
 	return nil
 }
 
+// isDue reports whether a task should be created
 func isDue(rt taskdomain.RecurringTask, now time.Time) (bool, error) {
 	if rt.LastRunAt == nil {
 		return !rt.StartDate.After(now), nil
@@ -120,6 +122,7 @@ func nextRun(rt taskdomain.RecurringTask) (time.Time, error) {
 	return calculateNext(rt)
 }
 
+// calculateNext returns time the next task should be created at
 func calculateNext(rt taskdomain.RecurringTask) (time.Time, error) {
 	last := *rt.LastRunAt
 
