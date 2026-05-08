@@ -1,6 +1,5 @@
 # OpenCode
 
-```aiignore
 Chat 'ChatTitle(text="Generate openapi fo…" with OpenCode, isCustom=true)' (6b1b4ebc-e708-4a59-89f4-13651c1797b6)
 Context:
 
