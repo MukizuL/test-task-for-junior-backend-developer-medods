@@ -13,13 +13,6 @@ import (
 	taskUsecase "example.com/taskservice/internal/usecase/task"
 )
 
-const (
-	FrequencyDaily   taskdomain.Frequency = "daily"
-	FrequencyWeekly  taskdomain.Frequency = "weekly"
-	FrequencyMonthly taskdomain.Frequency = "monthly"
-	FrequencyYearly  taskdomain.Frequency = "yearly"
-)
-
 var (
 	errGettingRecurringTask = errors.New("error getting due recurring tasks")
 	errUnknownFrequency     = errors.New("error unknown frequency")
@@ -127,13 +120,13 @@ func calculateNext(rt taskdomain.RecurringTask) (time.Time, error) {
 	last := *rt.LastRunAt
 
 	switch rt.Frequency {
-	case FrequencyDaily:
+	case taskdomain.FrequencyDaily:
 		return last.AddDate(0, 0, rt.Interval), nil
-	case FrequencyWeekly:
+	case taskdomain.FrequencyWeekly:
 		return last.AddDate(0, 0, 7*rt.Interval), nil
-	case FrequencyMonthly:
+	case taskdomain.FrequencyMonthly:
 		return last.AddDate(0, rt.Interval, 0), nil
-	case FrequencyYearly:
+	case taskdomain.FrequencyYearly:
 		return last.AddDate(rt.Interval, 0, 0), nil
 	default:
 		return time.Time{}, fmt.Errorf("%w: %s", errUnknownFrequency, rt.Frequency)
