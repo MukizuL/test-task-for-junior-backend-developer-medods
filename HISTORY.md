@@ -448,3 +448,5 @@ func (h *TaskHandler) ListRecurringTask(w http.ResponseWriter, r *http.Request) 
 ```
 
 # ChatGPT
+
+ChatGPT подсказал архитектуру. С ним создавал тесты для worker-а. Также проводил code review.
