@@ -449,3 +449,4 @@ func (h *TaskHandler) ListRecurringTask(w http.ResponseWriter, r *http.Request) 
 # ChatGPT
 
 ChatGPT подсказал архитектуру. С ним создавал тесты для worker-а. Также проводил code review.
+UPD 1: Решили сделать polymorphic scheduler для поддержки большего числа типов итеративности.

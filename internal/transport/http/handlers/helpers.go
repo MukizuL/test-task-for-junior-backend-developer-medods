@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -58,6 +59,11 @@ func writeUsecaseError(w http.ResponseWriter, err error) {
 		uw, ok := err.(interface{ Unwrap() []error })
 		if !ok {
 			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		if len(uw.Unwrap()) == 0 {
+			writeError(w, http.StatusInternalServerError, err)
+			log.Println("unwrapped error array is of length 0. forgot to join with errs.ErrInvalidInput?")
 			return
 		}
 		if validationErrs := getValidationErrors(uw.Unwrap()[1]); len(validationErrs) > 0 {

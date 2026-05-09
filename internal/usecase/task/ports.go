@@ -9,7 +9,7 @@ import (
 	"example.com/taskservice/internal/types"
 )
 
-//go:generate mockgen -source=ports.go -destination=mocks/ports.go -package=mocks -mock_names=Repository=MockRepo,Usecase=MockUsecase
+//go:generate mockgen -source=ports.go -destination=mocks/ports.go -package=mocksUsecase -mock_names=Repository=MockRepo,Usecase=MockUsecase
 
 type Repository interface {
 	Create(ctx context.Context, task *taskdomain.Task) (*taskdomain.Task, error)

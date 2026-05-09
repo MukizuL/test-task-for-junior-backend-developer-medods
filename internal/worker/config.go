@@ -8,10 +8,10 @@ type IntervalConfig struct {
 }
 
 type OddEvenConfig struct {
-	Mode string `json:"mode"` // odd/even
+	Mode string `json:"mode" validate:"required,oneof=odd even"`
 }
 
 type YearlyDateConfig struct {
-	Month int `json:"month"`
-	Day   int `json:"day"`
+	Month int `json:"month" validate:"required,min=1,max=12"`
+	Day   int `json:"day" validate:"required,min=1,max=31"` // maybe implement custom rule? max should depend on days in a month
 }
