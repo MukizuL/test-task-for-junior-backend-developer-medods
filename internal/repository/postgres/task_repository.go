@@ -22,7 +22,7 @@ func New(pool *pgxpool.Pool) *Repository {
 func (r *Repository) Create(ctx context.Context, task *taskdomain.Task) (*taskdomain.Task, error) {
 	const query = `
 		INSERT INTO tasks (rec_task_id, title, description, status, due_date, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) ON CONFLICT DO NOTHING
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, rec_task_id, title, description, status, due_date, created_at, updated_at
 	`
 

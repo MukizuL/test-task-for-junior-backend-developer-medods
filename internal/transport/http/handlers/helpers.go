@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -43,7 +44,7 @@ func decodeJSON(r *http.Request, dst any) error {
 	if err := decoder.Decode(dst); err != nil {
 		return err
 	}
-	if decoder.More() {
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		return errors.New("unexpected trailing data")
 	}
 	return nil
@@ -54,11 +55,24 @@ func writeUsecaseError(w http.ResponseWriter, err error) {
 	case errors.Is(err, taskdomain.ErrNotFound):
 		writeError(w, http.StatusNotFound, err)
 	case errors.Is(err, errs.ErrInvalidInput):
-		if validationErrs := getValidationErrors(err); len(validationErrs) > 0 {
+		uw, ok := err.(interface{ Unwrap() []error })
+		if !ok {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		if validationErrs := getValidationErrors(uw.Unwrap()[1]); len(validationErrs) > 0 {
 			writeValidationError(w, http.StatusBadRequest, validationErrs)
 			return
 		}
-		writeError(w, http.StatusBadRequest, err)
+		if syntaxErr, ok := errors.AsType[*json.SyntaxError](uw.Unwrap()[1]); ok {
+			writeError(w, http.StatusBadRequest, fmt.Errorf("invalid json syntax at position %d", syntaxErr.Offset))
+			return
+		}
+		if typeErr, ok := errors.AsType[*json.UnmarshalTypeError](uw.Unwrap()[1]); ok {
+			writeError(w, http.StatusBadRequest, fmt.Errorf("field %q must be %s", typeErr.Field, typeErr.Type.String()))
+			return
+		}
+		writeError(w, http.StatusBadRequest, uw.Unwrap()[1])
 	default:
 		writeError(w, http.StatusInternalServerError, err)
 	}

@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"example.com/taskservice/cmd/worker"
 	"example.com/taskservice/internal/clock"
 	infrastructurepostgres "example.com/taskservice/internal/infrastructure/postgres"
 	postgresrepo "example.com/taskservice/internal/repository/postgres"
@@ -20,6 +19,7 @@ import (
 	httphandlers "example.com/taskservice/internal/transport/http/handlers"
 	"example.com/taskservice/internal/types"
 	"example.com/taskservice/internal/usecase/task"
+	worker2 "example.com/taskservice/internal/worker"
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/sync/errgroup"
 )
@@ -45,11 +45,11 @@ func main() {
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
-	schedulers := map[types.RecurrenceType]worker.Scheduler{
-		types.RecurrenceInterval: &worker.IntervalScheduler{Validate: validate},
-		types.RecurrenceOddDays:  &worker.OddDaysScheduler{Validate: validate},
-		types.RecurrenceEvenDays: &worker.EvenDaysScheduler{Validate: validate},
-		types.RecurrenceYearlyOn: &worker.YearlyDateScheduler{Validate: validate},
+	schedulers := map[types.RecurrenceType]worker2.Scheduler{
+		types.RecurrenceInterval: &worker2.IntervalScheduler{Validate: validate},
+		types.RecurrenceOddDays:  &worker2.OddDaysScheduler{Validate: validate},
+		types.RecurrenceEvenDays: &worker2.EvenDaysScheduler{Validate: validate},
+		types.RecurrenceYearlyOn: &worker2.YearlyDateScheduler{Validate: validate},
 	}
 
 	taskRepo := postgresrepo.New(pool)
@@ -57,7 +57,7 @@ func main() {
 	taskHandler := httphandlers.NewTaskHandler(taskUsecase)
 	docsHandler := swaggerdocs.NewHandler()
 	router := transporthttp.NewRouter(taskHandler, docsHandler)
-	workerRecTask := worker.New(taskRepo, clock.RealClock{}, logger, schedulers)
+	workerRecTask := worker2.New(taskRepo, clock.RealClock{}, logger, schedulers)
 
 	g.Go(func() error {
 		return workerRecTask.Run(gCtx)

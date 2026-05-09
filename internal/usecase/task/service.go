@@ -3,8 +3,8 @@ package task
 import (
 	"time"
 
-	"example.com/taskservice/cmd/worker"
 	"example.com/taskservice/internal/types"
+	"example.com/taskservice/internal/worker"
 	"github.com/go-playground/validator/v10"
 )
 

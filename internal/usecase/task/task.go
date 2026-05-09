@@ -59,6 +59,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 		Title:           strings.TrimSpace(input.Title),
 		Description:     strings.TrimSpace(input.Description),
 		Status:          input.Status,
+		DueDate:         input.DueDate,
 		UpdatedAt:       s.now(),
 	}
 

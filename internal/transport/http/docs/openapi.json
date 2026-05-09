@@ -333,6 +333,11 @@
             "enum": ["new", "in_progress", "done"],
             "example": "new"
           },
+          "due_date": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-03-25T00:00:00Z"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -353,7 +358,7 @@
       },
       "CreateRecurringTaskRequest": {
         "type": "object",
-        "required": ["title", "frequency", "interval", "start_date"],
+        "required": ["title", "type", "config", "start_date"],
         "properties": {
           "title": {
             "type": "string",
@@ -363,14 +368,17 @@
             "type": "string",
             "example": "Generate weekly status report"
           },
-          "frequency": {
+          "type": {
             "type": "string",
-            "enum": ["daily", "weekly", "monthly", "yearly"],
-            "example": "weekly"
+            "enum": ["interval", "odd_days", "even_days", "yearly_on"],
+            "example": "interval"
           },
-          "interval": {
-            "type": "integer",
-            "example": 1
+          "config": {
+            "type": "object",
+            "example": {
+              "frequency": "daily",
+              "interval": 1
+            }
           },
           "start_date": {
             "type": "string",
@@ -386,7 +394,7 @@
       },
       "UpdateRecurringTaskRequest": {
         "type": "object",
-        "required": ["title", "frequency", "interval", "start_date"],
+        "required": ["title", "type", "config", "start_date"],
         "properties": {
           "title": {
             "type": "string",
@@ -396,14 +404,17 @@
             "type": "string",
             "example": "Generate weekly status report"
           },
-          "frequency": {
+          "type": {
             "type": "string",
-            "enum": ["daily", "weekly", "monthly", "yearly"],
-            "example": "weekly"
+            "enum": ["interval", "odd_days", "even_days", "yearly_on"],
+            "example": "interval"
           },
-          "interval": {
-            "type": "integer",
-            "example": 2
+          "config": {
+            "type": "object",
+            "example": {
+              "frequency": "daily",
+              "interval": 1
+            }
           },
           "start_date": {
             "type": "string",
@@ -426,14 +437,17 @@
             "type": "string",
             "example": "Generate weekly status report"
           },
-          "frequency": {
+          "type": {
             "type": "string",
-            "enum": ["daily", "weekly", "monthly", "yearly"],
-            "example": "weekly"
+            "enum": ["interval", "odd_days", "even_days", "yearly_on"],
+            "example": "interval"
           },
-          "interval": {
-            "type": "integer",
-            "example": 1
+          "config": {
+            "type": "object",
+            "example": {
+              "frequency": "daily",
+              "interval": 1
+            }
           },
           "start_date": {
             "type": "string",

@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	mocksWorker "example.com/taskservice/cmd/worker/mocks"
 	"example.com/taskservice/internal/clock"
 	"example.com/taskservice/internal/domain/taskdomain"
 	"example.com/taskservice/internal/types"
+	"example.com/taskservice/internal/worker/mocks"
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"

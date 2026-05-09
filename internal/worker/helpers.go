@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 
 	"example.com/taskservice/internal/errs"
 )
@@ -16,7 +17,7 @@ func parseRawConfig[T IntervalConfig | OddEvenConfig | YearlyDateConfig](raw jso
 	if err := decoder.Decode(&cfg); err != nil {
 		return cfg, errors.Join(errs.ErrInvalidInput, err)
 	}
-	if decoder.More() {
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		return cfg, errors.New("unexpected trailing data")
 	}
 	return cfg, nil
