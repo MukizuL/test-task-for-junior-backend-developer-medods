@@ -28,7 +28,7 @@ func scanTask(scanner taskScanner) (*taskdomain.Task, error) {
 		return nil, err
 	}
 
-	task.Status = taskdomain.Status(status)
+	task.Status = types.Status(status)
 
 	return &task, nil
 }

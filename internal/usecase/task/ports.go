@@ -40,16 +40,16 @@ type Usecase interface {
 type CreateInput struct {
 	Title       string `validate:"required"`
 	Description string
-	Status      taskdomain.Status `validate:"required,oneof=new in_progress done"`
-	DueDate     time.Time         `validate:"required,gt"`
+	Status      types.Status `validate:"required,oneof=new in_progress done"`
+	DueDate     time.Time    `validate:"required,gt"`
 }
 
 type UpdateInput struct {
 	RecurringTaskID int64
 	Title           string `validate:"required"`
 	Description     string
-	Status          taskdomain.Status `validate:"required,oneof=new in_progress done"`
-	DueDate         time.Time         `validate:"required,gt"`
+	Status          types.Status `validate:"required,oneof=new in_progress done"`
+	DueDate         time.Time    `validate:"required,gt"`
 }
 
 type CreateRecurringInput struct {

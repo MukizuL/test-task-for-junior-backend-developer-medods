@@ -86,7 +86,7 @@ func (w *Worker) RunOnce(ctx context.Context) error {
 			RecurringTaskID: &rt.ID,
 			Title:           rt.Title,
 			Description:     rt.Description,
-			Status:          taskdomain.StatusNew,
+			Status:          types.StatusNew,
 			DueDate:         next,
 			CreatedAt:       now,
 			UpdatedAt:       now,

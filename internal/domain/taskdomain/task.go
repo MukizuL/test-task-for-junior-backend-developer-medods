@@ -1,13 +1,9 @@
 package taskdomain
 
-import "time"
+import (
+	"time"
 
-type Status string
-
-const (
-	StatusNew        Status = "new"
-	StatusInProgress Status = "in_progress"
-	StatusDone       Status = "done"
+	"example.com/taskservice/internal/types"
 )
 
 type Task struct {
@@ -15,17 +11,8 @@ type Task struct {
 	RecurringTaskID *int64
 	Title           string
 	Description     string
-	Status          Status
+	Status          types.Status
 	DueDate         time.Time
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
-}
-
-func (s Status) Valid() bool {
-	switch s {
-	case StatusNew, StatusInProgress, StatusDone:
-		return true
-	default:
-		return false
-	}
 }

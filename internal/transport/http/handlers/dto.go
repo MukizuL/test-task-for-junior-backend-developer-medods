@@ -9,20 +9,20 @@ import (
 )
 
 type taskMutationDTO struct {
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
-	Status      taskdomain.Status `json:"status"`
-	DueDate     time.Time         `json:"due_date"`
+	Title       string       `json:"title"`
+	Description string       `json:"description"`
+	Status      types.Status `json:"status"`
+	DueDate     time.Time    `json:"due_date"`
 }
 
 type taskDTO struct {
-	ID          int64             `json:"id"`
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
-	Status      taskdomain.Status `json:"status"`
-	DueDate     time.Time         `json:"due_date"`
-	CreatedAt   time.Time         `json:"created_at"`
-	UpdatedAt   time.Time         `json:"updated_at"`
+	ID          int64        `json:"id"`
+	Title       string       `json:"title"`
+	Description string       `json:"description"`
+	Status      types.Status `json:"status"`
+	DueDate     time.Time    `json:"due_date"`
+	CreatedAt   time.Time    `json:"created_at"`
+	UpdatedAt   time.Time    `json:"updated_at"`
 }
 
 // newTaskDTO returns http response-ready struct

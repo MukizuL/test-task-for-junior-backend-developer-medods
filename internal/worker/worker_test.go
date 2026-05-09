@@ -60,7 +60,7 @@ func TestWorker_GeneratesTask(t *testing.T) {
 						assert.Equal(t, int64(1), *task.RecurringTaskID)
 						assert.Equal(t, "Task 1", task.Title)
 						assert.Equal(t, "Description 1", task.Description)
-						assert.Equal(t, taskdomain.StatusNew, task.Status)
+						assert.Equal(t, types.StatusNew, task.Status)
 
 						expectedDue := time.Date(2026, 4, 26+call, 10, 0, 0, 0, time.UTC)
 
