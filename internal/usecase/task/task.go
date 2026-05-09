@@ -7,12 +7,13 @@ import (
 	"strings"
 
 	"example.com/taskservice/internal/domain/taskdomain"
+	"example.com/taskservice/internal/errs"
 )
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Task, error) {
 	err := s.validate.Struct(input)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidInput, err)
+		return nil, errors.Join(errs.ErrInvalidInput, err)
 	}
 
 	model := &taskdomain.Task{
@@ -36,7 +37,7 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Ta
 
 func (s *Service) GetByID(ctx context.Context, id int64) (*taskdomain.Task, error) {
 	if id <= 0 {
-		return nil, fmt.Errorf("%w: id must be positive", ErrInvalidInput)
+		return nil, fmt.Errorf("%w: id must be positive", errs.ErrInvalidInput)
 	}
 
 	return s.repo.GetByID(ctx, id)
@@ -44,12 +45,12 @@ func (s *Service) GetByID(ctx context.Context, id int64) (*taskdomain.Task, erro
 
 func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*taskdomain.Task, error) {
 	if id <= 0 {
-		return nil, fmt.Errorf("%w: id must be positive", ErrInvalidInput)
+		return nil, fmt.Errorf("%w: id must be positive", errs.ErrInvalidInput)
 	}
 
 	err := s.validate.Struct(input)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidInput, err)
+		return nil, errors.Join(errs.ErrInvalidInput, err)
 	}
 
 	model := &taskdomain.Task{
@@ -71,7 +72,7 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 
 func (s *Service) Delete(ctx context.Context, id int64) error {
 	if id <= 0 {
-		return fmt.Errorf("%w: id must be positive", ErrInvalidInput)
+		return fmt.Errorf("%w: id must be positive", errs.ErrInvalidInput)
 	}
 
 	return s.repo.Delete(ctx, id)

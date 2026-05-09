@@ -1,34 +1,21 @@
 package taskdomain
 
-import "time"
+import (
+	"encoding/json"
+	"time"
 
-type Frequency string
-
-const (
-	FrequencyDaily   Frequency = "daily"
-	FrequencyWeekly  Frequency = "weekly"
-	FrequencyMonthly Frequency = "monthly"
-	FrequencyYearly  Frequency = "yearly"
+	"example.com/taskservice/internal/types"
 )
 
 type RecurringTask struct {
 	ID          int64
 	Title       string
 	Description string
-	Frequency   Frequency
-	Interval    int
+	Type        types.RecurrenceType
+	Config      json.RawMessage
 	StartDate   time.Time
 	EndDate     *time.Time
 	LastRunAt   *time.Time
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-}
-
-func (f Frequency) Valid() bool {
-	switch f {
-	case FrequencyDaily, FrequencyWeekly, FrequencyMonthly, FrequencyYearly:
-		return true
-	default:
-		return false
-	}
 }

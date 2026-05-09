@@ -7,9 +7,11 @@ import (
 	"testing"
 	"time"
 
+	mocksWorker "example.com/taskservice/cmd/worker/mocks"
 	"example.com/taskservice/internal/clock"
 	"example.com/taskservice/internal/domain/taskdomain"
-	"example.com/taskservice/internal/usecase/task/mocks"
+	"example.com/taskservice/internal/types"
+	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -24,14 +26,14 @@ func TestWorker_GeneratesTask(t *testing.T) {
 		name        string
 		c           *clock.FakeClock
 		timeSkip    time.Duration
-		mockStorage func(m *mocks.MockRepo)
+		mockStorage func(m *mocksWorker.MockRepo)
 		want        want
 	}{
 		{
 			name:     "Generate first and second daily task",
 			c:        clock.NewFake(time.Date(2026, 4, 26, 10, 0, 0, 0, time.UTC)),
 			timeSkip: 24 * time.Hour,
-			mockStorage: func(m *mocks.MockRepo) {
+			mockStorage: func(m *mocksWorker.MockRepo) {
 				var lastRunAt *time.Time
 				call := 0
 
@@ -42,8 +44,8 @@ func TestWorker_GeneratesTask(t *testing.T) {
 								ID:          1,
 								Title:       "Task 1",
 								Description: "Description 1",
-								Frequency:   taskdomain.FrequencyDaily,
-								Interval:    1,
+								Type:        types.RecurrenceInterval,
+								Config:      []byte(`{"frequency":"daily", "interval":1}`),
 								StartDate:   time.Date(2026, 4, 26, 10, 0, 0, 0, time.UTC),
 								EndDate:     nil,
 								LastRunAt:   lastRunAt,
@@ -82,7 +84,7 @@ func TestWorker_GeneratesTask(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
-			mockRepo := mocks.NewMockRepo(ctrl)
+			mockRepo := mocksWorker.NewMockRepo(ctrl)
 			if tt.mockStorage != nil {
 				tt.mockStorage(mockRepo)
 			}
@@ -92,7 +94,16 @@ func TestWorker_GeneratesTask(t *testing.T) {
 			}))
 
 			ctx := context.Background()
-			worker := New(mockRepo, tt.c, logger)
+			validate := validator.New(validator.WithRequiredStructEnabled())
+
+			schedulers := map[types.RecurrenceType]Scheduler{
+				types.RecurrenceInterval: &IntervalScheduler{Validate: validate},
+				types.RecurrenceOddDays:  &OddDaysScheduler{Validate: validate},
+				types.RecurrenceEvenDays: &EvenDaysScheduler{Validate: validate},
+				types.RecurrenceYearlyOn: &YearlyDateScheduler{Validate: validate},
+			}
+
+			worker := New(mockRepo, tt.c, logger, schedulers)
 
 			err := worker.RunOnce(ctx)
 			if tt.want.firstRun != nil {

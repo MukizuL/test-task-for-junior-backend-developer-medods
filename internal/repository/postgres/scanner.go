@@ -1,6 +1,9 @@
 package postgres
 
-import "example.com/taskservice/internal/domain/taskdomain"
+import (
+	"example.com/taskservice/internal/domain/taskdomain"
+	"example.com/taskservice/internal/types"
+)
 
 type taskScanner interface {
 	Scan(dest ...any) error
@@ -32,16 +35,16 @@ func scanTask(scanner taskScanner) (*taskdomain.Task, error) {
 
 func scanRecurringTask(scanner taskScanner) (*taskdomain.RecurringTask, error) {
 	var (
-		task      taskdomain.RecurringTask
-		frequency string
+		task    taskdomain.RecurringTask
+		recType string
 	)
 
 	if err := scanner.Scan(
 		&task.ID,
 		&task.Title,
 		&task.Description,
-		&frequency,
-		&task.Interval,
+		&recType,
+		&task.Config,
 		&task.StartDate,
 		&task.EndDate,
 		&task.LastRunAt,
@@ -51,7 +54,7 @@ func scanRecurringTask(scanner taskScanner) (*taskdomain.RecurringTask, error) {
 		return nil, err
 	}
 
-	task.Frequency = taskdomain.Frequency(frequency)
+	task.Type = types.RecurrenceType(recType)
 
 	return &task, nil
 }

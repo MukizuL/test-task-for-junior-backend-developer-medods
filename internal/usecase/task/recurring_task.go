@@ -7,19 +7,30 @@ import (
 	"strings"
 
 	"example.com/taskservice/internal/domain/taskdomain"
+	"example.com/taskservice/internal/errs"
 )
 
 func (s *Service) CreateRecurringTask(ctx context.Context, input CreateRecurringInput) (*taskdomain.RecurringTask, error) {
 	err := s.validate.Struct(input)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidInput, err)
+		return nil, errors.Join(errs.ErrInvalidInput, err)
+	}
+
+	scheduler, ok := s.schedulers[input.Type]
+	if !ok {
+		return nil, errors.New("unknown schedule type")
+	}
+
+	err = scheduler.ValidateConfig(input.Config)
+	if err != nil {
+		return nil, err
 	}
 
 	model := &taskdomain.RecurringTask{
 		Title:       strings.TrimSpace(input.Title),
 		Description: strings.TrimSpace(input.Description),
-		Frequency:   input.Frequency,
-		Interval:    input.Interval,
+		Type:        input.Type,
+		Config:      input.Config,
 		StartDate:   input.StartDate,
 		EndDate:     input.EndDate,
 	}
@@ -38,7 +49,7 @@ func (s *Service) CreateRecurringTask(ctx context.Context, input CreateRecurring
 
 func (s *Service) GetRecurringTaskByID(ctx context.Context, id int64) (*taskdomain.RecurringTask, error) {
 	if id <= 0 {
-		return nil, fmt.Errorf("%w: id must be positive", ErrInvalidInput)
+		return nil, fmt.Errorf("%w: id must be positive", errs.ErrInvalidInput)
 	}
 
 	return s.repo.GetRecurringTaskByID(ctx, id)
@@ -46,20 +57,30 @@ func (s *Service) GetRecurringTaskByID(ctx context.Context, id int64) (*taskdoma
 
 func (s *Service) UpdateRecurringTask(ctx context.Context, id int64, input UpdateRecurringInput) (*taskdomain.RecurringTask, error) {
 	if id <= 0 {
-		return nil, fmt.Errorf("%w: id must be positive", ErrInvalidInput)
+		return nil, fmt.Errorf("%w: id must be positive", errs.ErrInvalidInput)
 	}
 
 	err := s.validate.Struct(input)
 	if err != nil {
-		return nil, errors.Join(ErrInvalidInput, err)
+		return nil, errors.Join(errs.ErrInvalidInput, err)
+	}
+
+	scheduler, ok := s.schedulers[input.Type]
+	if !ok {
+		return nil, errors.New("unknown schedule type")
+	}
+
+	err = scheduler.ValidateConfig(input.Config)
+	if err != nil {
+		return nil, err
 	}
 
 	model := &taskdomain.RecurringTask{
 		ID:          id,
 		Title:       strings.TrimSpace(input.Title),
 		Description: strings.TrimSpace(input.Description),
-		Frequency:   input.Frequency,
-		Interval:    input.Interval,
+		Type:        input.Type,
+		Config:      input.Config,
 		StartDate:   input.StartDate,
 		EndDate:     input.EndDate,
 		UpdatedAt:   s.now(),
@@ -75,7 +96,7 @@ func (s *Service) UpdateRecurringTask(ctx context.Context, id int64, input Updat
 
 func (s *Service) DeleteRecurringTask(ctx context.Context, id int64) error {
 	if id <= 0 {
-		return fmt.Errorf("%w: id must be positive", ErrInvalidInput)
+		return fmt.Errorf("%w: id must be positive", errs.ErrInvalidInput)
 	}
 
 	return s.repo.DeleteRecurringTask(ctx, id)

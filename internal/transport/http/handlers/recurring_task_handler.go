@@ -16,8 +16,8 @@ func (h *TaskHandler) CreateRecurringTask(w http.ResponseWriter, r *http.Request
 	created, err := h.usecase.CreateRecurringTask(r.Context(), taskusecase.CreateRecurringInput{
 		Title:       req.Title,
 		Description: req.Description,
-		Frequency:   req.Frequency,
-		Interval:    req.Interval,
+		Type:        req.Type,
+		Config:      req.Config,
 		StartDate:   req.StartDate,
 		EndDate:     req.EndDate,
 	})
@@ -61,8 +61,8 @@ func (h *TaskHandler) UpdateRecurringTask(w http.ResponseWriter, r *http.Request
 	updated, err := h.usecase.UpdateRecurringTask(r.Context(), id, taskusecase.UpdateRecurringInput{
 		Title:       req.Title,
 		Description: req.Description,
-		Frequency:   req.Frequency,
-		Interval:    req.Interval,
+		Type:        req.Type,
+		Config:      req.Config,
 		StartDate:   req.StartDate,
 		EndDate:     req.EndDate,
 	})

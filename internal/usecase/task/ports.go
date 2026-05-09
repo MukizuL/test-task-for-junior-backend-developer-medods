@@ -2,9 +2,11 @@ package task
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"example.com/taskservice/internal/domain/taskdomain"
+	"example.com/taskservice/internal/types"
 )
 
 //go:generate mockgen -source=ports.go -destination=mocks/ports.go -package=mocks -mock_names=Repository=MockRepo,Usecase=MockUsecase
@@ -15,13 +17,11 @@ type Repository interface {
 	Update(ctx context.Context, task *taskdomain.Task) (*taskdomain.Task, error)
 	Delete(ctx context.Context, id int64) error
 	List(ctx context.Context) ([]taskdomain.Task, error)
-	GetDueRecurringTasks(ctx context.Context) ([]taskdomain.RecurringTask, error)
 	CreateRecurringTask(ctx context.Context, task *taskdomain.RecurringTask) (*taskdomain.RecurringTask, error)
 	GetRecurringTaskByID(ctx context.Context, id int64) (*taskdomain.RecurringTask, error)
 	UpdateRecurringTask(ctx context.Context, task *taskdomain.RecurringTask) (*taskdomain.RecurringTask, error)
 	DeleteRecurringTask(ctx context.Context, id int64) error
 	ListRecurringTasks(ctx context.Context) ([]taskdomain.RecurringTask, error)
-	CreateAndUpdateLastRunAt(ctx context.Context, task *taskdomain.Task, next time.Time) error
 }
 
 type Usecase interface {
@@ -46,26 +46,26 @@ type CreateInput struct {
 
 type UpdateInput struct {
 	RecurringTaskID int64
-	Title           string
+	Title           string `validate:"required"`
 	Description     string
-	Status          taskdomain.Status
-	DueDate         time.Time
+	Status          taskdomain.Status `validate:"required,oneof=new in_progress done"`
+	DueDate         time.Time         `validate:"required,gt"`
 }
 
 type CreateRecurringInput struct {
 	Title       string `validate:"required"`
 	Description string
-	Frequency   taskdomain.Frequency `validate:"required,oneof=daily weekly monthly yearly"`
-	Interval    int                  `validate:"required,min=1,max=365"`
+	Type        types.RecurrenceType `validate:"required,oneof=interval odd_days even_days yearly_on"`
+	Config      json.RawMessage      `validate:"required"`
 	StartDate   time.Time            `validate:"required"`
 	EndDate     *time.Time           `validate:"gtfield=StartDate"`
 }
 
 type UpdateRecurringInput struct {
-	Title       string
+	Title       string `validate:"required"`
 	Description string
-	Frequency   taskdomain.Frequency
-	Interval    int
-	StartDate   time.Time
-	EndDate     *time.Time
+	Type        types.RecurrenceType `validate:"required,oneof=interval odd_days even_days yearly_on"`
+	Config      json.RawMessage      `validate:"required"`
+	StartDate   time.Time            `validate:"required"`
+	EndDate     *time.Time           `validate:"gtfield=StartDate"`
 }

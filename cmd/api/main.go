@@ -18,6 +18,7 @@ import (
 	transporthttp "example.com/taskservice/internal/transport/http"
 	swaggerdocs "example.com/taskservice/internal/transport/http/docs"
 	httphandlers "example.com/taskservice/internal/transport/http/handlers"
+	"example.com/taskservice/internal/types"
 	"example.com/taskservice/internal/usecase/task"
 	"github.com/go-playground/validator/v10"
 	"golang.org/x/sync/errgroup"
@@ -44,12 +45,19 @@ func main() {
 
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
+	schedulers := map[types.RecurrenceType]worker.Scheduler{
+		types.RecurrenceInterval: &worker.IntervalScheduler{Validate: validate},
+		types.RecurrenceOddDays:  &worker.OddDaysScheduler{Validate: validate},
+		types.RecurrenceEvenDays: &worker.EvenDaysScheduler{Validate: validate},
+		types.RecurrenceYearlyOn: &worker.YearlyDateScheduler{Validate: validate},
+	}
+
 	taskRepo := postgresrepo.New(pool)
-	taskUsecase := task.NewService(taskRepo, validate)
+	taskUsecase := task.NewService(taskRepo, validate, schedulers)
 	taskHandler := httphandlers.NewTaskHandler(taskUsecase)
 	docsHandler := swaggerdocs.NewHandler()
 	router := transporthttp.NewRouter(taskHandler, docsHandler)
-	workerRecTask := worker.New(taskRepo, clock.RealClock{}, logger)
+	workerRecTask := worker.New(taskRepo, clock.RealClock{}, logger, schedulers)
 
 	g.Go(func() error {
 		return workerRecTask.Run(gCtx)

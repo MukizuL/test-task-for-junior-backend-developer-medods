@@ -1,9 +1,11 @@
 package handlers
 
 import (
+	"encoding/json"
 	"time"
 
 	"example.com/taskservice/internal/domain/taskdomain"
+	"example.com/taskservice/internal/types"
 )
 
 type taskMutationDTO struct {
@@ -39,8 +41,8 @@ func newTaskDTO(task *taskdomain.Task) taskDTO {
 type recurringTaskMutationDTO struct {
 	Title       string               `json:"title"`
 	Description string               `json:"description"`
-	Frequency   taskdomain.Frequency `json:"frequency"`
-	Interval    int                  `json:"interval"`
+	Type        types.RecurrenceType `json:"type"`
+	Config      json.RawMessage      `json:"config"`
 	StartDate   time.Time            `json:"start_date"`
 	EndDate     *time.Time           `json:"end_date"`
 }
@@ -49,8 +51,8 @@ type recurringTaskDTO struct {
 	ID          int64                `json:"id"`
 	Title       string               `json:"title"`
 	Description string               `json:"description"`
-	Frequency   taskdomain.Frequency `json:"frequency"`
-	Interval    int                  `json:"interval"`
+	Type        types.RecurrenceType `json:"type"`
+	Config      json.RawMessage      `json:"config"`
 	StartDate   time.Time            `json:"start_date"`
 	EndDate     *time.Time           `json:"end_date"`
 	LastRunAt   *time.Time           `json:"last_run_at"`
@@ -64,8 +66,8 @@ func newRecurringTaskDTO(task *taskdomain.RecurringTask) recurringTaskDTO {
 		ID:          task.ID,
 		Title:       task.Title,
 		Description: task.Description,
-		Frequency:   task.Frequency,
-		Interval:    task.Interval,
+		Type:        task.Type,
+		Config:      task.Config,
 		StartDate:   task.StartDate,
 		EndDate:     task.EndDate,
 		LastRunAt:   task.LastRunAt,

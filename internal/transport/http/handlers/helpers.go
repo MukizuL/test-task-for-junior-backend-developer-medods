@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	"example.com/taskservice/internal/domain/taskdomain"
-	taskusecase "example.com/taskservice/internal/usecase/task"
+	"example.com/taskservice/internal/errs"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 )
@@ -43,7 +43,9 @@ func decodeJSON(r *http.Request, dst any) error {
 	if err := decoder.Decode(dst); err != nil {
 		return err
 	}
-
+	if decoder.More() {
+		return errors.New("unexpected trailing data")
+	}
 	return nil
 }
 
@@ -51,7 +53,7 @@ func writeUsecaseError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, taskdomain.ErrNotFound):
 		writeError(w, http.StatusNotFound, err)
-	case errors.Is(err, taskusecase.ErrInvalidInput):
+	case errors.Is(err, errs.ErrInvalidInput):
 		if validationErrs := getValidationErrors(err); len(validationErrs) > 0 {
 			writeValidationError(w, http.StatusBadRequest, validationErrs)
 			return

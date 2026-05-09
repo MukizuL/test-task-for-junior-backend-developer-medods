@@ -4,13 +4,12 @@ package worker
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"time"
 
 	"example.com/taskservice/internal/clock"
 	"example.com/taskservice/internal/domain/taskdomain"
-	taskUsecase "example.com/taskservice/internal/usecase/task"
+	"example.com/taskservice/internal/types"
 )
 
 var (
@@ -19,16 +18,18 @@ var (
 )
 
 type Worker struct {
-	repo   taskUsecase.Repository
-	clock  clock.Clock
-	logger *slog.Logger
+	repo       Repository
+	schedulers map[types.RecurrenceType]Scheduler
+	clock      clock.Clock
+	logger     *slog.Logger
 }
 
-func New(repo taskUsecase.Repository, clock clock.Clock, logger *slog.Logger) *Worker {
+func New(repo Repository, clock clock.Clock, logger *slog.Logger, schedulers map[types.RecurrenceType]Scheduler) *Worker {
 	return &Worker{
-		repo:   repo,
-		clock:  clock,
-		logger: logger,
+		repo:       repo,
+		schedulers: schedulers,
+		clock:      clock,
+		logger:     logger,
 	}
 }
 
@@ -59,9 +60,15 @@ func (w *Worker) RunOnce(ctx context.Context) error {
 	}
 
 	for _, rt := range recTasks {
-		yes, errLoop := isDue(rt, now)
+		scheduler, ok := w.schedulers[rt.Type]
+		if !ok {
+			w.logger.Error("unknown schedule type")
+			continue
+		}
+
+		yes, errLoop := scheduler.IsDue(rt, now)
 		if errLoop != nil {
-			w.logger.Error("unknown frequency in isDue", "error", err, "task_id", rt.ID)
+			w.logger.Error("failed checking recurrence schedule", "task_id", rt.ID, "error", errLoop)
 			continue
 		}
 
@@ -69,9 +76,9 @@ func (w *Worker) RunOnce(ctx context.Context) error {
 			continue
 		}
 
-		next, errLoop := nextRun(rt)
+		next, errLoop := scheduler.NextRun(rt)
 		if errLoop != nil {
-			w.logger.Error("unknown frequency in nextRun", "error", err, "task_id", rt.ID)
+			w.logger.Error("failed computing next recurrence", "task_id", rt.ID, "error", errLoop)
 			continue
 		}
 
@@ -87,48 +94,10 @@ func (w *Worker) RunOnce(ctx context.Context) error {
 
 		errLoop = w.repo.CreateAndUpdateLastRunAt(ctx, &task, next)
 		if errLoop != nil {
-			w.logger.Error("error in CreateAndUpdateLastRunAt", "error", err, "task", task)
+			w.logger.Error("error in CreateAndUpdateLastRunAt", "task", task, "error", errLoop)
 			continue
 		}
 	}
 
 	return nil
-}
-
-// isDue reports whether a task should be created
-func isDue(rt taskdomain.RecurringTask, now time.Time) (bool, error) {
-	if rt.LastRunAt == nil {
-		return !rt.StartDate.After(now), nil
-	}
-
-	next, err := calculateNext(rt)
-	if err != nil {
-		return false, err
-	}
-	return !next.After(now), nil
-}
-
-func nextRun(rt taskdomain.RecurringTask) (time.Time, error) {
-	if rt.LastRunAt == nil {
-		return rt.StartDate, nil
-	}
-	return calculateNext(rt)
-}
-
-// calculateNext returns time the next task should be created at
-func calculateNext(rt taskdomain.RecurringTask) (time.Time, error) {
-	last := *rt.LastRunAt
-
-	switch rt.Frequency {
-	case taskdomain.FrequencyDaily:
-		return last.AddDate(0, 0, rt.Interval), nil
-	case taskdomain.FrequencyWeekly:
-		return last.AddDate(0, 0, 7*rt.Interval), nil
-	case taskdomain.FrequencyMonthly:
-		return last.AddDate(0, rt.Interval, 0), nil
-	case taskdomain.FrequencyYearly:
-		return last.AddDate(rt.Interval, 0, 0), nil
-	default:
-		return time.Time{}, fmt.Errorf("%w: %s", errUnknownFrequency, rt.Frequency)
-	}
 }
