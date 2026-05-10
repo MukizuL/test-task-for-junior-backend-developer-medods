@@ -4,7 +4,7 @@
 
 ## Требования
 
-- Go `1.23+`
+- Go `1.26+`
 - Docker и Docker Compose
 
 ## Быстрый запуск через Docker Compose
