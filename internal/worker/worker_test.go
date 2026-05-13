@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"os"
 	"testing"
 	"time"
 
@@ -235,9 +234,7 @@ func TestWorker_IntervalScheduler(t *testing.T) {
 				tt.mockStorage(mockRepo)
 			}
 
-			logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-				Level: slog.LevelInfo,
-			}))
+			logger := slog.New(slog.DiscardHandler)
 
 			ctx := context.Background()
 			validate := validator.New(validator.WithRequiredStructEnabled())
@@ -286,7 +283,6 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 			timeSkip: 48 * time.Hour,
 			mockStorage: func(m *mocksWorker.MockRepo) {
 				var lastRunAt *time.Time
-				call := 0
 
 				m.EXPECT().GetDueRecurringTasks(gomock.Any()).
 					DoAndReturn(func(ctx context.Context) ([]taskdomain.RecurringTask, error) {
@@ -315,7 +311,6 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 
 						assert.Equal(t, 0, task.DueDate.Day()%2)
 
-						call += 2
 						lastRunAt = &next
 
 						return nil
@@ -332,7 +327,6 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 			timeSkip: 48 * time.Hour,
 			mockStorage: func(m *mocksWorker.MockRepo) {
 				var lastRunAt *time.Time
-				call := 1
 
 				m.EXPECT().GetDueRecurringTasks(gomock.Any()).
 					DoAndReturn(func(ctx context.Context) ([]taskdomain.RecurringTask, error) {
@@ -361,7 +355,6 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 
 						assert.Equal(t, 0, task.DueDate.Day()%2)
 
-						call += 2
 						lastRunAt = &next
 
 						return nil
@@ -378,7 +371,6 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 			timeSkip: 48 * time.Hour,
 			mockStorage: func(m *mocksWorker.MockRepo) {
 				var lastRunAt *time.Time
-				call := 0
 
 				m.EXPECT().GetDueRecurringTasks(gomock.Any()).
 					DoAndReturn(func(ctx context.Context) ([]taskdomain.RecurringTask, error) {
@@ -407,7 +399,6 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 
 						assert.Equal(t, 1, task.DueDate.Day()%2)
 
-						call += 2
 						lastRunAt = &next
 
 						return nil
@@ -424,7 +415,6 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 			timeSkip: 48 * time.Hour,
 			mockStorage: func(m *mocksWorker.MockRepo) {
 				var lastRunAt *time.Time
-				call := 1
 
 				m.EXPECT().GetDueRecurringTasks(gomock.Any()).
 					DoAndReturn(func(ctx context.Context) ([]taskdomain.RecurringTask, error) {
@@ -453,7 +443,6 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 
 						assert.Equal(t, 1, task.DueDate.Day()%2)
 
-						call += 2
 						lastRunAt = &next
 
 						return nil
@@ -476,9 +465,7 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 				tt.mockStorage(mockRepo)
 			}
 
-			logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-				Level: slog.LevelInfo,
-			}))
+			logger := slog.New(slog.DiscardHandler)
 
 			ctx := context.Background()
 			validate := validator.New(validator.WithRequiredStructEnabled())
@@ -638,9 +625,7 @@ func TestWorker_SpecificDateScheduler(t *testing.T) {
 				tt.mockStorage(mockRepo)
 			}
 
-			logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-				Level: slog.LevelInfo,
-			}))
+			logger := slog.New(slog.DiscardHandler)
 
 			ctx := context.Background()
 			validate := validator.New(validator.WithRequiredStructEnabled())

@@ -33,8 +33,8 @@ func (s *IntervalScheduler) calculateNext(rt taskdomain.RecurringTask, now time.
 		last = *rt.LastRunAt
 	}
 
-	if !rt.StartDate.Before(now) {
-		return rt.StartDate, nil
+	if !last.Before(now) {
+		return last, nil
 	}
 
 	for {
@@ -135,12 +135,16 @@ func (s *EvenOddDaysScheduler) calculateNext(rt taskdomain.RecurringTask, now ti
 		switch cfg.Mode {
 		case "odd":
 			if day%2 == 1 {
-				return current, nil
+				if !current.Before(now) {
+					return current, nil
+				}
 			}
 
 		case "even":
 			if day%2 == 0 {
-				return current, nil
+				if !current.Before(now) {
+					return current, nil
+				}
 			}
 
 		default:
