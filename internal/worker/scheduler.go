@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	"example.com/taskservice/internal/domain/taskdomain"
@@ -15,33 +14,57 @@ import (
 )
 
 type Scheduler interface {
-	IsDue(rt taskdomain.RecurringTask, now time.Time) (bool, error)
-	NextRun(rt taskdomain.RecurringTask) (time.Time, error)
+	IsDue(rt taskdomain.RecurringTask, now time.Time) (time.Time, bool, error)
 	ValidateConfig(raw json.RawMessage) error
 }
 
 type IntervalScheduler struct{ Validate *validator.Validate }
 
-func (s *IntervalScheduler) calculateNext(rt taskdomain.RecurringTask) (time.Time, error) {
-	last := *rt.LastRunAt
-
+func (s *IntervalScheduler) calculateNext(rt taskdomain.RecurringTask, now time.Time) (time.Time, error) {
 	cfg, err := s.parseConfig(rt)
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	switch cfg.Frequency {
-	case types.FrequencyDaily:
-		return last.AddDate(0, 0, cfg.Interval), nil
-	case types.FrequencyWeekly:
-		return last.AddDate(0, 0, 7*cfg.Interval), nil
-	case types.FrequencyMonthly:
-		return last.AddDate(0, cfg.Interval, 0), nil
-	case types.FrequencyYearly:
-		return last.AddDate(cfg.Interval, 0, 0), nil
-	default:
-		return time.Time{}, fmt.Errorf("%w: %s", errUnknownFrequency, cfg.Frequency)
+	var last time.Time
+	if rt.LastRunAt == nil {
+		last = rt.StartDate
+	} else {
+		last = *rt.LastRunAt
 	}
+
+	if !rt.StartDate.Before(now) {
+		return rt.StartDate, nil
+	}
+
+	for {
+		next, errLoop := calculateNextForIntervalConfig(cfg, last)
+		if errLoop != nil {
+			return time.Time{}, errLoop
+		}
+		if !next.Before(now) {
+			return next, nil
+		}
+		last = next
+	}
+}
+
+func (s *IntervalScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (time.Time, bool, error) {
+	// Check of LastRunAt is in the past
+	if rt.LastRunAt != nil && !rt.LastRunAt.Before(now) {
+		return time.Time{}, false, nil
+	}
+
+	next, err := s.calculateNext(rt, now)
+	if err != nil {
+		return time.Time{}, false, err
+	}
+
+	if rt.EndDate != nil && next.After(*rt.EndDate) {
+		return time.Time{}, false, nil
+	}
+
+	return next, true, nil
 }
 
 func (s *IntervalScheduler) parseConfig(rt taskdomain.RecurringTask) (IntervalConfig, error) {
@@ -53,25 +76,6 @@ func (s *IntervalScheduler) parseConfig(rt taskdomain.RecurringTask) (IntervalCo
 		return IntervalConfig{}, errors.Join(errs.ErrInvalidInput, err)
 	}
 	return cfg, nil
-}
-
-func (s *IntervalScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (bool, error) {
-	if rt.LastRunAt == nil {
-		return !rt.StartDate.After(now), nil
-	}
-
-	next, err := s.calculateNext(rt)
-	if err != nil {
-		return false, err
-	}
-	return !next.After(now), nil
-}
-
-func (s *IntervalScheduler) NextRun(rt taskdomain.RecurringTask) (time.Time, error) {
-	if rt.LastRunAt == nil {
-		return rt.StartDate, nil
-	}
-	return s.calculateNext(rt)
 }
 
 func (s *IntervalScheduler) ValidateConfig(raw json.RawMessage) error {
@@ -109,47 +113,82 @@ func (s *IntervalScheduler) ValidateConfig(raw json.RawMessage) error {
 	return nil
 }
 
-type OddDaysScheduler struct{ Validate *validator.Validate }
+type EvenOddDaysScheduler struct{ Validate *validator.Validate }
 
-func (s *OddDaysScheduler) calculateNext(rt taskdomain.RecurringTask) (time.Time, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *EvenOddDaysScheduler) calculateNext(rt taskdomain.RecurringTask, now time.Time) (time.Time, error) {
+	cfg, err := s.parseConfig(rt)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	var current time.Time
+
+	if rt.LastRunAt == nil {
+		current = rt.StartDate
+	} else {
+		current = rt.LastRunAt.AddDate(0, 0, 1)
+	}
+
+	for {
+		day := current.Day()
+
+		switch cfg.Mode {
+		case "odd":
+			if day%2 == 1 {
+				return current, nil
+			}
+
+		case "even":
+			if day%2 == 0 {
+				return current, nil
+			}
+
+		default:
+			return time.Time{}, errors.New("unknown mode")
+		}
+
+		current = current.AddDate(0, 0, 1)
+	}
 }
 
-func (s *OddDaysScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (bool, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *EvenOddDaysScheduler) parseConfig(rt taskdomain.RecurringTask) (OddEvenConfig, error) {
+	var cfg OddEvenConfig
+	decoder := json.NewDecoder(bytes.NewBuffer(rt.Config))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&cfg); err != nil {
+		return OddEvenConfig{}, errors.Join(errs.ErrInvalidInput, err)
+	}
+	return cfg, nil
 }
 
-func (s *OddDaysScheduler) NextRun(rt taskdomain.RecurringTask) (time.Time, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *EvenOddDaysScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (time.Time, bool, error) {
+	if rt.LastRunAt != nil && !rt.LastRunAt.Before(now) {
+		return time.Time{}, false, nil
+	}
+
+	next, err := s.calculateNext(rt, now)
+	if err != nil {
+		return time.Time{}, false, err
+	}
+
+	if rt.EndDate != nil && next.After(*rt.EndDate) {
+		return time.Time{}, false, nil
+	}
+
+	return next, true, nil
 }
 
-func (s *OddDaysScheduler) ValidateConfig(raw json.RawMessage) error {
-	//TODO implement me
-	panic("implement me")
-}
+func (s *EvenOddDaysScheduler) ValidateConfig(raw json.RawMessage) error {
+	cfg, err := parseRawConfig[OddEvenConfig](raw)
+	if err != nil {
+		return err
+	}
 
-type EvenDaysScheduler struct{ Validate *validator.Validate }
-
-func (s *EvenDaysScheduler) calculateNext(rt taskdomain.RecurringTask) (time.Time, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *EvenDaysScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (bool, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *EvenDaysScheduler) NextRun(rt taskdomain.RecurringTask) (time.Time, error) {
-	//TODO implement me
-	panic("implement me")
-}
-func (s *EvenDaysScheduler) ValidateConfig(raw json.RawMessage) error {
-	//TODO implement me
-	panic("implement me")
+	if err := s.Validate.Struct(cfg); err != nil {
+		return errors.Join(errs.ErrInvalidInput, err)
+	}
+	return nil
 }
 
 type YearlyDateScheduler struct{ Validate *validator.Validate }
@@ -159,12 +198,7 @@ func (s *YearlyDateScheduler) calculateNext(rt taskdomain.RecurringTask) (time.T
 	panic("implement me")
 }
 
-func (s *YearlyDateScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (bool, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (s *YearlyDateScheduler) NextRun(rt taskdomain.RecurringTask) (time.Time, error) {
+func (s *YearlyDateScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (time.Time, bool, error) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -15,7 +15,7 @@ func (r *Repository) GetDueRecurringTasks(ctx context.Context) ([]taskdomain.Rec
 	const query = `
 		SELECT id, title, description, type, config, start_date, end_date, last_run_at, created_at, updated_at
 		FROM recurring_tasks
-		WHERE start_date <= $1 AND (end_date IS NULL OR end_date >= $1)
+		WHERE (last_run_at IS NULL OR last_run_at < $1) AND (end_date IS NULL OR end_date >= $1)
 	`
 
 	rows, err := r.pool.Query(ctx, query, now)

@@ -62,23 +62,17 @@ func (w *Worker) RunOnce(ctx context.Context) error {
 	for _, rt := range recTasks {
 		scheduler, ok := w.schedulers[rt.Type]
 		if !ok {
-			w.logger.Error("unknown schedule type")
+			w.logger.Error("unknown schedule type", "task_id", rt.ID)
 			continue
 		}
 
-		yes, errLoop := scheduler.IsDue(rt, now)
+		next, yes, errLoop := scheduler.IsDue(rt, now)
 		if errLoop != nil {
-			w.logger.Error("failed checking recurrence schedule", "task_id", rt.ID, "error", errLoop)
+			w.logger.Error("failed computing next recurrence", "task_id", rt.ID, "error", errLoop)
 			continue
 		}
 
 		if !yes {
-			continue
-		}
-
-		next, errLoop := scheduler.NextRun(rt)
-		if errLoop != nil {
-			w.logger.Error("failed computing next recurrence", "task_id", rt.ID, "error", errLoop)
 			continue
 		}
 
@@ -94,7 +88,7 @@ func (w *Worker) RunOnce(ctx context.Context) error {
 
 		errLoop = w.repo.CreateAndUpdateLastRunAt(ctx, &task, next)
 		if errLoop != nil {
-			w.logger.Error("error in CreateAndUpdateLastRunAt", "task", task, "error", errLoop)
+			w.logger.Error("failed persisting recurring task", "task_id", rt.ID, "next", next, "error", errLoop)
 			continue
 		}
 	}
