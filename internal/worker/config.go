@@ -1,6 +1,10 @@
 package worker
 
-import "example.com/taskservice/internal/types"
+import (
+	"time"
+
+	"example.com/taskservice/internal/types"
+)
 
 type IntervalConfig struct {
 	Frequency types.Frequency `json:"frequency" validate:"required,oneof=daily weekly monthly yearly"`
@@ -11,7 +15,6 @@ type OddEvenConfig struct {
 	Mode string `json:"mode" validate:"required,oneof=odd even"`
 }
 
-type YearlyDateConfig struct {
-	Month int `json:"month" validate:"required,min=1,max=12"`
-	Day   int `json:"day" validate:"required,min=1,max=31"` // maybe implement custom rule? max should depend on days in a month
+type SpecificDateConfig struct {
+	Dates []time.Time `json:"dates" validate:"required"`
 }

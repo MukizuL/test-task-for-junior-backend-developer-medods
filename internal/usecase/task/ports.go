@@ -55,7 +55,7 @@ type UpdateInput struct {
 type CreateRecurringInput struct {
 	Title       string `validate:"required"`
 	Description string
-	Type        types.RecurrenceType `validate:"required,oneof=interval odd_days even_days yearly_on"`
+	Type        types.RecurrenceType `validate:"required,oneof=interval even_odd_days specific_dates"`
 	Config      json.RawMessage      `validate:"required"`
 	StartDate   time.Time            `validate:"required"`
 	EndDate     *time.Time           `validate:"gtfield=StartDate"`
@@ -64,7 +64,7 @@ type CreateRecurringInput struct {
 type UpdateRecurringInput struct {
 	Title       string `validate:"required"`
 	Description string
-	Type        types.RecurrenceType `validate:"required,oneof=interval odd_days even_days yearly_on"`
+	Type        types.RecurrenceType `validate:"required,oneof=interval even_odd_days specific_dates"`
 	Config      json.RawMessage      `validate:"required"`
 	StartDate   time.Time            `validate:"required"`
 	EndDate     *time.Time           `validate:"gtfield=StartDate"`

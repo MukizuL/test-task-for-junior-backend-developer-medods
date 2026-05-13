@@ -50,7 +50,7 @@ func (s *IntervalScheduler) calculateNext(rt taskdomain.RecurringTask, now time.
 }
 
 func (s *IntervalScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (time.Time, bool, error) {
-	// Check of LastRunAt is in the past
+	// Check if LastRunAt is in the past
 	if rt.LastRunAt != nil && !rt.LastRunAt.Before(now) {
 		return time.Time{}, false, nil
 	}
@@ -59,7 +59,7 @@ func (s *IntervalScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (t
 	if err != nil {
 		return time.Time{}, false, err
 	}
-
+	// Check if next is after the EndDate
 	if rt.EndDate != nil && next.After(*rt.EndDate) {
 		return time.Time{}, false, nil
 	}
@@ -191,19 +191,83 @@ func (s *EvenOddDaysScheduler) ValidateConfig(raw json.RawMessage) error {
 	return nil
 }
 
-type YearlyDateScheduler struct{ Validate *validator.Validate }
+type SpecificDateScheduler struct{ Validate *validator.Validate }
 
-func (s *YearlyDateScheduler) calculateNext(rt taskdomain.RecurringTask) (time.Time, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *SpecificDateScheduler) calculateNext(rt taskdomain.RecurringTask, now time.Time) (time.Time, error) {
+	cfg, err := s.parseConfig(rt)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	var last time.Time
+	if rt.LastRunAt == nil {
+		last = rt.StartDate
+	} else {
+		last = *rt.LastRunAt
+	}
+
+	var next time.Time
+
+	for _, date := range cfg.Dates {
+		// skip past dates
+		if date.Before(now) {
+			continue
+		}
+
+		// skip already consumed dates
+		if date.Before(last) {
+			continue
+		}
+
+		// find minimum suitable date
+		if next.IsZero() || date.Before(next) {
+			next = date
+		}
+	}
+
+	if next.IsZero() {
+		return time.Time{}, errors.New("no suitable next date")
+	}
+
+	return next, nil
 }
 
-func (s *YearlyDateScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (time.Time, bool, error) {
-	//TODO implement me
-	panic("implement me")
+func (s *SpecificDateScheduler) parseConfig(rt taskdomain.RecurringTask) (SpecificDateConfig, error) {
+	var cfg SpecificDateConfig
+	decoder := json.NewDecoder(bytes.NewBuffer(rt.Config))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&cfg); err != nil {
+		return SpecificDateConfig{}, errors.Join(errs.ErrInvalidInput, err)
+	}
+	return cfg, nil
 }
 
-func (s *YearlyDateScheduler) ValidateConfig(raw json.RawMessage) error {
-	//TODO implement me
-	panic("implement me")
+func (s *SpecificDateScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (time.Time, bool, error) {
+	if rt.LastRunAt != nil && !rt.LastRunAt.Before(now) {
+		return time.Time{}, false, nil
+	}
+
+	next, err := s.calculateNext(rt, now)
+	if err != nil {
+		return time.Time{}, false, err
+	}
+
+	if rt.EndDate != nil && next.After(*rt.EndDate) {
+		return time.Time{}, false, nil
+	}
+
+	return next, true, nil
+}
+
+func (s *SpecificDateScheduler) ValidateConfig(raw json.RawMessage) error {
+	cfg, err := parseRawConfig[SpecificDateConfig](raw)
+	if err != nil {
+		return err
+	}
+
+	if err := s.Validate.Struct(cfg); err != nil {
+		return errors.Join(errs.ErrInvalidInput, err)
+	}
+	return nil
 }

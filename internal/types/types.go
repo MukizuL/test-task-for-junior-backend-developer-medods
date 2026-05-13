@@ -12,10 +12,9 @@ const (
 type RecurrenceType string
 
 const (
-	RecurrenceInterval RecurrenceType = "interval"
-	RecurrenceOddDays  RecurrenceType = "odd_days"
-	RecurrenceEvenDays RecurrenceType = "even_days"
-	RecurrenceYearlyOn RecurrenceType = "yearly_on"
+	RecurrenceInterval      RecurrenceType = "interval"
+	RecurrenceOddDays       RecurrenceType = "odd_days"
+	RecurrenceSpecificDates RecurrenceType = "specific_dates"
 )
 
 type Status string

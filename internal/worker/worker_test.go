@@ -2,7 +2,7 @@ package worker
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"log/slog"
 	"os"
 	"testing"
@@ -244,8 +244,6 @@ func TestWorker_IntervalScheduler(t *testing.T) {
 
 			schedulers := map[types.RecurrenceType]Scheduler{
 				types.RecurrenceInterval: &IntervalScheduler{Validate: validate},
-				types.RecurrenceOddDays:  &EvenOddDaysScheduler{Validate: validate},
-				//types.RecurrenceYearlyOn: &YearlyDateScheduler{Validate: validate},
 			}
 
 			worker := New(mockRepo, tt.c, logger, schedulers)
@@ -338,7 +336,6 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 
 				m.EXPECT().GetDueRecurringTasks(gomock.Any()).
 					DoAndReturn(func(ctx context.Context) ([]taskdomain.RecurringTask, error) {
-						fmt.Println(lastRunAt)
 						return []taskdomain.RecurringTask{
 							{
 								ID:          1,
@@ -487,9 +484,7 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 			validate := validator.New(validator.WithRequiredStructEnabled())
 
 			schedulers := map[types.RecurrenceType]Scheduler{
-				types.RecurrenceInterval: &IntervalScheduler{Validate: validate},
-				types.RecurrenceOddDays:  &EvenOddDaysScheduler{Validate: validate},
-				//types.RecurrenceYearlyOn: &YearlyDateScheduler{Validate: validate},
+				types.RecurrenceOddDays: &EvenOddDaysScheduler{Validate: validate},
 			}
 
 			worker := New(mockRepo, tt.c, logger, schedulers)
@@ -508,6 +503,162 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestWorker_SpecificDateScheduler(t *testing.T) {
+	type want struct {
+		runs []error
+	}
+
+	tests := []struct {
+		name        string
+		c           *clock.FakeClock
+		timeSkip    []time.Duration
+		mockStorage func(m *mocksWorker.MockRepo)
+		want        want
+	}{
+		{
+			name:     "Generate 3 tasks sorted",
+			c:        clock.NewFake(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)),
+			timeSkip: []time.Duration{24 * time.Hour, 24 * time.Hour, 0},
+			mockStorage: func(m *mocksWorker.MockRepo) {
+				var lastRunAt *time.Time
+				call := 0
+				cfg := SpecificDateConfig{Dates: []time.Time{
+					time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+					time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC),
+					time.Date(2026, 1, 3, 0, 0, 0, 0, time.UTC),
+				}}
+
+				raw, _ := json.Marshal(cfg)
+
+				m.EXPECT().GetDueRecurringTasks(gomock.Any()).
+					DoAndReturn(func(ctx context.Context) ([]taskdomain.RecurringTask, error) {
+						return []taskdomain.RecurringTask{
+							{
+								ID:          1,
+								Title:       "Task 1",
+								Description: "Description 1",
+								Type:        types.RecurrenceSpecificDates,
+								Config:      raw,
+								StartDate:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+								EndDate:     nil,
+								LastRunAt:   lastRunAt,
+								CreatedAt:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+								UpdatedAt:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+							},
+						}, nil
+					}).Times(3)
+
+				m.EXPECT().CreateAndUpdateLastRunAt(gomock.Any(), gomock.AssignableToTypeOf(&taskdomain.Task{}), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, task *taskdomain.Task, next time.Time) error {
+						assert.Equal(t, int64(1), *task.RecurringTaskID)
+						assert.Equal(t, "Task 1", task.Title)
+						assert.Equal(t, "Description 1", task.Description)
+						assert.Equal(t, types.StatusNew, task.Status)
+
+						assert.Equal(t, cfg.Dates[call], task.DueDate)
+
+						call++
+						lastRunAt = &next
+
+						return nil
+					}).Times(3)
+			},
+			want: want{runs: []error{nil, nil, nil}},
+		},
+		{
+			name:     "Generate 3 tasks unsorted",
+			c:        clock.NewFake(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)),
+			timeSkip: []time.Duration{24 * time.Hour, 24 * time.Hour, 0},
+			mockStorage: func(m *mocksWorker.MockRepo) {
+				var lastRunAt *time.Time
+				call := 0
+				cfg := SpecificDateConfig{Dates: []time.Time{
+					time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+					time.Date(2026, 1, 3, 0, 0, 0, 0, time.UTC),
+					time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC),
+				}}
+
+				cfgSorted := SpecificDateConfig{Dates: []time.Time{
+					time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+					time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC),
+					time.Date(2026, 1, 3, 0, 0, 0, 0, time.UTC),
+				}}
+
+				raw, _ := json.Marshal(cfg)
+
+				m.EXPECT().GetDueRecurringTasks(gomock.Any()).
+					DoAndReturn(func(ctx context.Context) ([]taskdomain.RecurringTask, error) {
+						return []taskdomain.RecurringTask{
+							{
+								ID:          1,
+								Title:       "Task 1",
+								Description: "Description 1",
+								Type:        types.RecurrenceSpecificDates,
+								Config:      raw,
+								StartDate:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+								EndDate:     nil,
+								LastRunAt:   lastRunAt,
+								CreatedAt:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+								UpdatedAt:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
+							},
+						}, nil
+					}).Times(3)
+
+				m.EXPECT().CreateAndUpdateLastRunAt(gomock.Any(), gomock.AssignableToTypeOf(&taskdomain.Task{}), gomock.Any()).
+					DoAndReturn(func(ctx context.Context, task *taskdomain.Task, next time.Time) error {
+						assert.Equal(t, int64(1), *task.RecurringTaskID)
+						assert.Equal(t, "Task 1", task.Title)
+						assert.Equal(t, "Description 1", task.Description)
+						assert.Equal(t, types.StatusNew, task.Status)
+
+						assert.Equal(t, cfgSorted.Dates[call], task.DueDate)
+
+						call++
+						lastRunAt = &next
+
+						return nil
+					}).Times(3)
+			},
+			want: want{runs: []error{nil, nil, nil}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockRepo := mocksWorker.NewMockRepo(ctrl)
+			if tt.mockStorage != nil {
+				tt.mockStorage(mockRepo)
+			}
+
+			logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+				Level: slog.LevelInfo,
+			}))
+
+			ctx := context.Background()
+			validate := validator.New(validator.WithRequiredStructEnabled())
+
+			schedulers := map[types.RecurrenceType]Scheduler{
+				types.RecurrenceSpecificDates: &SpecificDateScheduler{Validate: validate},
+			}
+
+			worker := New(mockRepo, tt.c, logger, schedulers)
+
+			for i, wantErr := range tt.want.runs {
+				err := worker.RunOnce(ctx)
+				if wantErr != nil {
+					assert.Error(t, err)
+				} else {
+					assert.NoError(t, err)
+				}
+				tt.c.Add(tt.timeSkip[i])
 			}
 		})
 	}

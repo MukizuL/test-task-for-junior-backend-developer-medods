@@ -12,7 +12,7 @@ import (
 	"example.com/taskservice/internal/types"
 )
 
-func parseRawConfig[T IntervalConfig | OddEvenConfig | YearlyDateConfig](raw json.RawMessage) (T, error) {
+func parseRawConfig[T IntervalConfig | OddEvenConfig | SpecificDateConfig](raw json.RawMessage) (T, error) {
 	var cfg T
 	decoder := json.NewDecoder(bytes.NewBuffer(raw))
 	decoder.DisallowUnknownFields()

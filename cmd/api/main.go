@@ -46,9 +46,9 @@ func main() {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
 	schedulers := map[types.RecurrenceType]worker.Scheduler{
-		types.RecurrenceInterval: &worker.IntervalScheduler{Validate: validate},
-		types.RecurrenceOddDays:  &worker.EvenOddDaysScheduler{Validate: validate},
-		//types.RecurrenceYearlyOn: &worker2.YearlyDateScheduler{Validate: validate},
+		types.RecurrenceInterval:      &worker.IntervalScheduler{Validate: validate},
+		types.RecurrenceOddDays:       &worker.EvenOddDaysScheduler{Validate: validate},
+		types.RecurrenceSpecificDates: &worker.SpecificDateScheduler{Validate: validate},
 	}
 
 	taskRepo := postgresrepo.New(pool)
