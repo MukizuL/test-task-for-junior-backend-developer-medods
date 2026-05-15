@@ -11,6 +11,9 @@ import (
 )
 
 func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Task, error) {
+	input.Title = strings.TrimSpace(input.Title)
+	input.Description = strings.TrimSpace(input.Description)
+
 	err := s.validate.Struct(input)
 	if err != nil {
 		return nil, errors.Join(errs.ErrInvalidInput, err)
@@ -18,8 +21,8 @@ func (s *Service) Create(ctx context.Context, input CreateInput) (*taskdomain.Ta
 
 	model := &taskdomain.Task{
 		RecurringTaskID: nil,
-		Title:           strings.TrimSpace(input.Title),
-		Description:     strings.TrimSpace(input.Description),
+		Title:           input.Title,
+		Description:     input.Description,
 		Status:          input.Status,
 		DueDate:         input.DueDate,
 	}
@@ -48,6 +51,9 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 		return nil, fmt.Errorf("%w: id must be positive", errs.ErrInvalidInput)
 	}
 
+	input.Title = strings.TrimSpace(input.Title)
+	input.Description = strings.TrimSpace(input.Description)
+
 	err := s.validate.Struct(input)
 	if err != nil {
 		return nil, errors.Join(errs.ErrInvalidInput, err)
@@ -56,8 +62,8 @@ func (s *Service) Update(ctx context.Context, id int64, input UpdateInput) (*tas
 	model := &taskdomain.Task{
 		ID:              id,
 		RecurringTaskID: &input.RecurringTaskID,
-		Title:           strings.TrimSpace(input.Title),
-		Description:     strings.TrimSpace(input.Description),
+		Title:           input.Title,
+		Description:     input.Description,
 		Status:          input.Status,
 		DueDate:         input.DueDate,
 		UpdatedAt:       s.now(),

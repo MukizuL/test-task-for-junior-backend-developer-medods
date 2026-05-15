@@ -11,6 +11,9 @@ import (
 )
 
 func (s *Service) CreateRecurringTask(ctx context.Context, input CreateRecurringInput) (*taskdomain.RecurringTask, error) {
+	input.Title = strings.TrimSpace(input.Title)
+	input.Description = strings.TrimSpace(input.Description)
+
 	err := s.validate.Struct(input)
 	if err != nil {
 		return nil, errors.Join(errs.ErrInvalidInput, err)
@@ -23,12 +26,12 @@ func (s *Service) CreateRecurringTask(ctx context.Context, input CreateRecurring
 
 	err = scheduler.ValidateConfig(input.Config)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(errs.ErrInvalidInput, err)
 	}
 
 	model := &taskdomain.RecurringTask{
-		Title:       strings.TrimSpace(input.Title),
-		Description: strings.TrimSpace(input.Description),
+		Title:       input.Title,
+		Description: input.Description,
 		Type:        input.Type,
 		Config:      input.Config,
 		StartDate:   input.StartDate,
@@ -60,6 +63,9 @@ func (s *Service) UpdateRecurringTask(ctx context.Context, id int64, input Updat
 		return nil, fmt.Errorf("%w: id must be positive", errs.ErrInvalidInput)
 	}
 
+	input.Title = strings.TrimSpace(input.Title)
+	input.Description = strings.TrimSpace(input.Description)
+
 	err := s.validate.Struct(input)
 	if err != nil {
 		return nil, errors.Join(errs.ErrInvalidInput, err)
@@ -72,13 +78,13 @@ func (s *Service) UpdateRecurringTask(ctx context.Context, id int64, input Updat
 
 	err = scheduler.ValidateConfig(input.Config)
 	if err != nil {
-		return nil, err
+		return nil, errors.Join(errs.ErrInvalidInput, err)
 	}
 
 	model := &taskdomain.RecurringTask{
 		ID:          id,
-		Title:       strings.TrimSpace(input.Title),
-		Description: strings.TrimSpace(input.Description),
+		Title:       input.Title,
+		Description: input.Description,
 		Type:        input.Type,
 		Config:      input.Config,
 		StartDate:   input.StartDate,

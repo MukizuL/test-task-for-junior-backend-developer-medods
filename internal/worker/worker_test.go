@@ -291,7 +291,7 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 								ID:          1,
 								Title:       "Task 1",
 								Description: "Description 1",
-								Type:        types.RecurrenceOddDays,
+								Type:        types.RecurrenceEvenOddDays,
 								Config:      []byte(`{"mode":"even"}`),
 								StartDate:   time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC),
 								EndDate:     nil,
@@ -335,7 +335,7 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 								ID:          1,
 								Title:       "Task 1",
 								Description: "Description 1",
-								Type:        types.RecurrenceOddDays,
+								Type:        types.RecurrenceEvenOddDays,
 								Config:      []byte(`{"mode":"even"}`),
 								StartDate:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
 								EndDate:     nil,
@@ -379,7 +379,7 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 								ID:          1,
 								Title:       "Task 1",
 								Description: "Description 1",
-								Type:        types.RecurrenceOddDays,
+								Type:        types.RecurrenceEvenOddDays,
 								Config:      []byte(`{"mode":"odd"}`),
 								StartDate:   time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC),
 								EndDate:     nil,
@@ -423,7 +423,7 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 								ID:          1,
 								Title:       "Task 1",
 								Description: "Description 1",
-								Type:        types.RecurrenceOddDays,
+								Type:        types.RecurrenceEvenOddDays,
 								Config:      []byte(`{"mode":"odd"}`),
 								StartDate:   time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC),
 								EndDate:     nil,
@@ -471,7 +471,7 @@ func TestWorker_OddDaysScheduler(t *testing.T) {
 			validate := validator.New(validator.WithRequiredStructEnabled())
 
 			schedulers := map[types.RecurrenceType]Scheduler{
-				types.RecurrenceOddDays: &EvenOddDaysScheduler{Validate: validate},
+				types.RecurrenceEvenOddDays: &EvenOddDaysScheduler{Validate: validate},
 			}
 
 			worker := New(mockRepo, tt.c, logger, schedulers)

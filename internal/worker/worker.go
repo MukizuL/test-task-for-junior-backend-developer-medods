@@ -33,8 +33,8 @@ func New(repo Repository, clock clock.Clock, logger *slog.Logger, schedulers map
 	}
 }
 
-func (w *Worker) Run(ctx context.Context) error {
-	ticker := time.NewTicker(5 * time.Second)
+func (w *Worker) Run(ctx context.Context, tick time.Duration) error {
+	ticker := time.NewTicker(tick)
 	defer ticker.Stop()
 
 	for {

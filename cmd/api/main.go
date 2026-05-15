@@ -47,7 +47,7 @@ func main() {
 
 	schedulers := map[types.RecurrenceType]worker.Scheduler{
 		types.RecurrenceInterval:      &worker.IntervalScheduler{Validate: validate},
-		types.RecurrenceOddDays:       &worker.EvenOddDaysScheduler{Validate: validate},
+		types.RecurrenceEvenOddDays:   &worker.EvenOddDaysScheduler{Validate: validate},
 		types.RecurrenceSpecificDates: &worker.SpecificDateScheduler{Validate: validate},
 	}
 
@@ -59,7 +59,7 @@ func main() {
 	workerRecTask := worker.New(taskRepo, clock.RealClock{}, logger, schedulers)
 
 	g.Go(func() error {
-		return workerRecTask.Run(gCtx)
+		return workerRecTask.Run(gCtx, cfg.WorkerTick)
 	})
 
 	server := &http.Server{
@@ -96,12 +96,21 @@ func main() {
 type config struct {
 	HTTPAddr    string
 	DatabaseDSN string
+	WorkerTick  time.Duration
 }
 
 func loadConfig() config {
 	cfg := config{
 		HTTPAddr:    envOrDefault("HTTP_ADDR", ":8080"),
 		DatabaseDSN: envOrDefault("DATABASE_DSN", "postgres://postgres:postgres@localhost:5432/taskservice?sslmode=disable"),
+	}
+
+	workerTick := envOrDefault("WORKER_TICK", "5s")
+
+	var err error
+	cfg.WorkerTick, err = time.ParseDuration(workerTick)
+	if err != nil {
+		panic(err)
 	}
 
 	if cfg.DatabaseDSN == "" {

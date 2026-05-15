@@ -13,7 +13,7 @@ type RecurrenceType string
 
 const (
 	RecurrenceInterval      RecurrenceType = "interval"
-	RecurrenceOddDays       RecurrenceType = "odd_days"
+	RecurrenceEvenOddDays   RecurrenceType = "even_odd_days"
 	RecurrenceSpecificDates RecurrenceType = "specific_dates"
 )
 
