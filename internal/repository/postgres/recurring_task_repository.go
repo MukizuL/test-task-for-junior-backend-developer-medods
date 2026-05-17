@@ -10,6 +10,9 @@ import (
 )
 
 func (r *Repository) GetDueRecurringTasks(ctx context.Context) ([]taskdomain.RecurringTask, error) {
+	ctxPG, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	now := time.Now().UTC()
 
 	const query = `
@@ -18,7 +21,7 @@ func (r *Repository) GetDueRecurringTasks(ctx context.Context) ([]taskdomain.Rec
 		WHERE (last_run_at IS NULL OR last_run_at < $1) AND (end_date IS NULL OR end_date >= $1)
 	`
 
-	rows, err := r.pool.Query(ctx, query, now)
+	rows, err := r.pool.Query(ctxPG, query, now)
 	if err != nil {
 		return nil, err
 	}
@@ -43,6 +46,9 @@ func (r *Repository) GetDueRecurringTasks(ctx context.Context) ([]taskdomain.Rec
 }
 
 func (r *Repository) CreateRecurringTask(ctx context.Context, task *taskdomain.RecurringTask) (*taskdomain.RecurringTask, error) {
+	ctxPG, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	const query = `
 		INSERT INTO recurring_tasks (title,	description, type, config, start_date, end_date, last_run_at, created_at, updated_at)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
@@ -50,7 +56,7 @@ func (r *Repository) CreateRecurringTask(ctx context.Context, task *taskdomain.R
 	`
 
 	row := r.pool.QueryRow(
-		ctx,
+		ctxPG,
 		query,
 		task.Title,
 		task.Description,
@@ -72,13 +78,16 @@ func (r *Repository) CreateRecurringTask(ctx context.Context, task *taskdomain.R
 }
 
 func (r *Repository) GetRecurringTaskByID(ctx context.Context, id int64) (*taskdomain.RecurringTask, error) {
+	ctxPG, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	const query = `
 		SELECT id, title, description, type, config, start_date, end_date, last_run_at, created_at, updated_at
 		FROM recurring_tasks
 		WHERE id = $1
 	`
 
-	row := r.pool.QueryRow(ctx, query, id)
+	row := r.pool.QueryRow(ctxPG, query, id)
 	found, err := scanRecurringTask(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -92,6 +101,9 @@ func (r *Repository) GetRecurringTaskByID(ctx context.Context, id int64) (*taskd
 }
 
 func (r *Repository) UpdateRecurringTask(ctx context.Context, task *taskdomain.RecurringTask) (*taskdomain.RecurringTask, error) {
+	ctxPG, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	const query = `
 		UPDATE recurring_tasks
 		SET title = $1,
@@ -105,7 +117,7 @@ func (r *Repository) UpdateRecurringTask(ctx context.Context, task *taskdomain.R
 		RETURNING id, title, description, type, config, start_date, end_date, last_run_at, created_at, updated_at
 	`
 
-	row := r.pool.QueryRow(ctx, query, task.Title, task.Description, task.Type, task.Config, task.StartDate, task.EndDate, task.UpdatedAt, task.ID)
+	row := r.pool.QueryRow(ctxPG, query, task.Title, task.Description, task.Type, task.Config, task.StartDate, task.EndDate, task.UpdatedAt, task.ID)
 	updated, err := scanRecurringTask(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -119,9 +131,12 @@ func (r *Repository) UpdateRecurringTask(ctx context.Context, task *taskdomain.R
 }
 
 func (r *Repository) DeleteRecurringTask(ctx context.Context, id int64) error {
+	ctxPG, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	const query = `DELETE FROM recurring_tasks WHERE id = $1`
 
-	result, err := r.pool.Exec(ctx, query, id)
+	result, err := r.pool.Exec(ctxPG, query, id)
 	if err != nil {
 		return err
 	}
@@ -134,13 +149,16 @@ func (r *Repository) DeleteRecurringTask(ctx context.Context, id int64) error {
 }
 
 func (r *Repository) ListRecurringTasks(ctx context.Context) ([]taskdomain.RecurringTask, error) {
+	ctxPG, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	const query = `
 		SELECT id, title, description, type, config, start_date, end_date, last_run_at, created_at, updated_at
 		FROM recurring_tasks
 		ORDER BY id DESC
 	`
 
-	rows, err := r.pool.Query(ctx, query)
+	rows, err := r.pool.Query(ctxPG, query)
 	if err != nil {
 		return nil, err
 	}
