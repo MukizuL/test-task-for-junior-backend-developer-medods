@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -17,10 +16,12 @@ import (
 	transporthttp "example.com/taskservice/internal/transport/http"
 	swaggerdocs "example.com/taskservice/internal/transport/http/docs"
 	httphandlers "example.com/taskservice/internal/transport/http/handlers"
+	"example.com/taskservice/internal/transport/http/middleware"
 	"example.com/taskservice/internal/types"
 	"example.com/taskservice/internal/usecase/task"
 	"example.com/taskservice/internal/worker"
 	"github.com/go-playground/validator/v10"
+	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -29,14 +30,18 @@ func main() {
 		Level: slog.LevelInfo,
 	}))
 
-	cfg := loadConfig()
+	err := loadConfig()
+	if err != nil {
+		logger.Error("Error loading config", "error", err)
+		os.Exit(0)
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
 	g, gCtx := errgroup.WithContext(ctx)
 
-	pool, err := infrastructurepostgres.Open(ctx, cfg.DatabaseDSN)
+	pool, err := infrastructurepostgres.Open(ctx, viper.GetString("DATABASE_DSN"))
 	if err != nil {
 		logger.Error("open postgres", "error", err)
 		os.Exit(1)
@@ -55,15 +60,16 @@ func main() {
 	taskUsecase := task.NewService(taskRepo, validate, schedulers)
 	taskHandler := httphandlers.NewTaskHandler(taskUsecase)
 	docsHandler := swaggerdocs.NewHandler()
-	router := transporthttp.NewRouter(taskHandler, docsHandler)
+	mw := middleware.NewMiddlewareService(logger)
+	router := transporthttp.NewRouter(taskHandler, docsHandler, mw.RecoverPanic, mw.LoggerMW)
 	workerRecTask := worker.New(taskRepo, clock.RealClock{}, logger, schedulers)
 
 	g.Go(func() error {
-		return workerRecTask.Run(gCtx, cfg.WorkerTick)
+		return workerRecTask.Run(gCtx, viper.GetDuration("WORKER_TICK"))
 	})
 
 	server := &http.Server{
-		Addr:              cfg.HTTPAddr,
+		Addr:              viper.GetString("HTTP_ADDR"),
 		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -79,7 +85,7 @@ func main() {
 		}
 	}()
 
-	logger.Info("http server started", "addr", cfg.HTTPAddr)
+	logger.Info("http server started", "addr", viper.GetString("HTTP_ADDR"))
 
 	g.Go(func() error {
 		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -93,37 +99,25 @@ func main() {
 	}
 }
 
-type config struct {
-	HTTPAddr    string
-	DatabaseDSN string
-	WorkerTick  time.Duration
-}
+func loadConfig() error {
+	viper.SetDefault("HTTP_ADDR", ":8080")
+	viper.SetDefault("DATABASE_DSN", "postgres://postgres:postgres@localhost:5432/taskservice?sslmode=disable")
+	viper.SetDefault("WORKER_TICK", "5s")
 
-func loadConfig() config {
-	cfg := config{
-		HTTPAddr:    envOrDefault("HTTP_ADDR", ":8080"),
-		DatabaseDSN: envOrDefault("DATABASE_DSN", "postgres://postgres:postgres@localhost:5432/taskservice?sslmode=disable"),
-	}
-
-	workerTick := envOrDefault("WORKER_TICK", "5s")
-
-	var err error
-	cfg.WorkerTick, err = time.ParseDuration(workerTick)
+	err := viper.BindEnv("HTTP_ADDR")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	if cfg.DatabaseDSN == "" {
-		panic(fmt.Errorf("DATABASE_DSN is required"))
+	err = viper.BindEnv("DATABASE_DSN")
+	if err != nil {
+		return err
 	}
 
-	return cfg
-}
-
-func envOrDefault(key, fallback string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
+	err = viper.BindEnv("WORKER_TICK")
+	if err != nil {
+		return err
 	}
 
-	return fallback
+	return nil
 }
