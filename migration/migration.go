@@ -22,17 +22,23 @@ func Run(dsn string, debug bool) error {
 	if err != nil {
 		return fmt.Errorf("failed to open database when running migration: %w", err)
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	goose.SetBaseFS(embedMigrations)
 
-	if err := goose.SetDialect("postgres"); err != nil {
+	err = goose.SetDialect("postgres")
+	if err != nil {
 		return fmt.Errorf("failed to set postgres dialect: %w", err)
 	}
 
 	if debug {
-		// Should not be in release
-		goose.Reset(db, "migrations")
+		// Should not be set to True in release
+		err = goose.Reset(db, "migrations")
+		if err != nil {
+			return fmt.Errorf("failed to reset migration table: %w", err)
+		}
 	}
 
 	if err := goose.Up(db, "migrations"); err != nil {

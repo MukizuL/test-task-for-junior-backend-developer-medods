@@ -117,7 +117,7 @@ func (s *EvenOddDaysScheduler) calculateNext(rt taskdomain.RecurringTask, now ti
 		current = rt.LastRunAt.AddDate(0, 0, 1)
 	}
 
-	for {
+	for i := 0; i < 365; i++ {
 		day := current.Day()
 
 		switch cfg.Mode {
@@ -141,6 +141,8 @@ func (s *EvenOddDaysScheduler) calculateNext(rt taskdomain.RecurringTask, now ti
 
 		current = current.AddDate(0, 0, 1)
 	}
+
+	return time.Time{}, errors.New("no suitable date found")
 }
 
 func (s *EvenOddDaysScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (time.Time, bool, error) {
