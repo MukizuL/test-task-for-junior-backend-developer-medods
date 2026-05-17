@@ -20,6 +20,7 @@ import (
 	"example.com/taskservice/internal/types"
 	"example.com/taskservice/internal/usecase/task"
 	"example.com/taskservice/internal/worker"
+	"example.com/taskservice/migration"
 	"github.com/go-playground/validator/v10"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -33,6 +34,12 @@ func main() {
 	err := loadConfig()
 	if err != nil {
 		logger.Error("Error loading config", "error", err)
+		os.Exit(0)
+	}
+
+	err = migration.Run(viper.GetString("DATABASE_DSN"), viper.GetBool("DEBUG"))
+	if err != nil {
+		logger.Error("Error running migrations", "error", err)
 		os.Exit(0)
 	}
 
@@ -103,6 +110,7 @@ func loadConfig() error {
 	viper.SetDefault("HTTP_ADDR", ":8080")
 	viper.SetDefault("DATABASE_DSN", "postgres://postgres:postgres@localhost:5432/taskservice?sslmode=disable")
 	viper.SetDefault("WORKER_TICK", "5s")
+	viper.SetDefault("DEBUG", false)
 
 	err := viper.BindEnv("HTTP_ADDR")
 	if err != nil {
@@ -115,6 +123,11 @@ func loadConfig() error {
 	}
 
 	err = viper.BindEnv("WORKER_TICK")
+	if err != nil {
+		return err
+	}
+
+	err = viper.BindEnv("DEBUG")
 	if err != nil {
 		return err
 	}

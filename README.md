@@ -15,14 +15,7 @@ docker compose up --build
 
 После запуска сервис будет доступен по адресу `http://localhost:8080`.
 
-Если `postgres` уже запускался ранее со старой схемой, пересоздай volume:
-
-```bash
-docker compose down -v
-docker compose up --build
-```
-
-Причина в том, что SQL-файл из `migrations/0001_create_tasks.up.sql` монтируется в `docker-entrypoint-initdb.d` и применяется только при инициализации пустого data volume.
+При разработке можно использовать env "DEBUG". При каждом запуске программы все таблицы будут пересозданы.
 
 ## Swagger
 
