@@ -107,9 +107,9 @@ func getValidationErrors(err error) map[string]string {
 			case "oneof":
 				errorsMap[field] = fmt.Sprintf("Must be one of: %s", fe.Param())
 			case "gt":
-				errorsMap[field] = fmt.Sprint("Due date must be in the future")
+				errorsMap[field] = "Due date must be in the future"
 			case "gtfield":
-				errorsMap[field] = fmt.Sprint("End date must be after start date")
+				errorsMap[field] = "End date must be after start date"
 			default:
 				errorsMap[field] = fmt.Sprintf("Failed on '%s' validation", tag)
 			}
