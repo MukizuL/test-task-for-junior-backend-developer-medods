@@ -370,7 +370,7 @@
           },
           "type": {
             "type": "string",
-            "enum": ["interval", "odd_days", "even_days", "yearly_on"],
+            "enum": ["interval", "even_odd_days", "specific_dates"],
             "example": "interval"
           },
           "config": {
@@ -406,7 +406,7 @@
           },
           "type": {
             "type": "string",
-            "enum": ["interval", "odd_days", "even_days", "yearly_on"],
+            "enum": ["interval", "even_odd_days", "specific_dates"],
             "example": "interval"
           },
           "config": {
@@ -439,7 +439,7 @@
           },
           "type": {
             "type": "string",
-            "enum": ["interval", "odd_days", "even_days", "yearly_on"],
+            "enum": ["interval", "even_odd_days", "specific_dates"],
             "example": "interval"
           },
           "config": {
