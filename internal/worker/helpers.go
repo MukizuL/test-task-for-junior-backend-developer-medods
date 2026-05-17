@@ -8,11 +8,12 @@ import (
 	"io"
 	"time"
 
+	"example.com/taskservice/internal/domain/taskdomain"
 	"example.com/taskservice/internal/errs"
 	"example.com/taskservice/internal/types"
 )
 
-func parseRawConfig[T IntervalConfig | OddEvenConfig | SpecificDateConfig](raw json.RawMessage) (T, error) {
+func parseRawConfig[T IntervalConfig | EvenOddConfig | SpecificDateConfig](raw json.RawMessage) (T, error) {
 	var cfg T
 	decoder := json.NewDecoder(bytes.NewBuffer(raw))
 	decoder.DisallowUnknownFields()
@@ -22,6 +23,17 @@ func parseRawConfig[T IntervalConfig | OddEvenConfig | SpecificDateConfig](raw j
 	}
 	if err := decoder.Decode(&struct{}{}); err != io.EOF {
 		return cfg, errors.New("unexpected trailing data")
+	}
+	return cfg, nil
+}
+
+func parseConfig[T IntervalConfig | EvenOddConfig | SpecificDateConfig](rt taskdomain.RecurringTask) (T, error) {
+	var cfg T
+	decoder := json.NewDecoder(bytes.NewBuffer(rt.Config))
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&cfg); err != nil {
+		return cfg, errors.Join(errs.ErrInvalidInput, err)
 	}
 	return cfg, nil
 }

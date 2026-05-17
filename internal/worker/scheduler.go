@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"time"
@@ -21,7 +20,7 @@ type Scheduler interface {
 type IntervalScheduler struct{ Validate *validator.Validate }
 
 func (s *IntervalScheduler) calculateNext(rt taskdomain.RecurringTask, now time.Time) (time.Time, error) {
-	cfg, err := s.parseConfig(rt)
+	cfg, err := parseConfig[IntervalConfig](rt)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -67,17 +66,6 @@ func (s *IntervalScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (t
 	return next, true, nil
 }
 
-func (s *IntervalScheduler) parseConfig(rt taskdomain.RecurringTask) (IntervalConfig, error) {
-	var cfg IntervalConfig
-	decoder := json.NewDecoder(bytes.NewBuffer(rt.Config))
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(&cfg); err != nil {
-		return IntervalConfig{}, errors.Join(errs.ErrInvalidInput, err)
-	}
-	return cfg, nil
-}
-
 func (s *IntervalScheduler) ValidateConfig(raw json.RawMessage) error {
 	cfg, err := parseRawConfig[IntervalConfig](raw)
 	if err != nil {
@@ -116,7 +104,7 @@ func (s *IntervalScheduler) ValidateConfig(raw json.RawMessage) error {
 type EvenOddDaysScheduler struct{ Validate *validator.Validate }
 
 func (s *EvenOddDaysScheduler) calculateNext(rt taskdomain.RecurringTask, now time.Time) (time.Time, error) {
-	cfg, err := s.parseConfig(rt)
+	cfg, err := parseConfig[EvenOddConfig](rt)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -155,17 +143,6 @@ func (s *EvenOddDaysScheduler) calculateNext(rt taskdomain.RecurringTask, now ti
 	}
 }
 
-func (s *EvenOddDaysScheduler) parseConfig(rt taskdomain.RecurringTask) (OddEvenConfig, error) {
-	var cfg OddEvenConfig
-	decoder := json.NewDecoder(bytes.NewBuffer(rt.Config))
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(&cfg); err != nil {
-		return OddEvenConfig{}, errors.Join(errs.ErrInvalidInput, err)
-	}
-	return cfg, nil
-}
-
 func (s *EvenOddDaysScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (time.Time, bool, error) {
 	if rt.LastRunAt != nil && !rt.LastRunAt.Before(now) {
 		return time.Time{}, false, nil
@@ -184,7 +161,7 @@ func (s *EvenOddDaysScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time)
 }
 
 func (s *EvenOddDaysScheduler) ValidateConfig(raw json.RawMessage) error {
-	cfg, err := parseRawConfig[OddEvenConfig](raw)
+	cfg, err := parseRawConfig[EvenOddConfig](raw)
 	if err != nil {
 		return err
 	}
@@ -198,7 +175,7 @@ func (s *EvenOddDaysScheduler) ValidateConfig(raw json.RawMessage) error {
 type SpecificDateScheduler struct{ Validate *validator.Validate }
 
 func (s *SpecificDateScheduler) calculateNext(rt taskdomain.RecurringTask, now time.Time) (time.Time, error) {
-	cfg, err := s.parseConfig(rt)
+	cfg, err := parseConfig[SpecificDateConfig](rt)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -234,17 +211,6 @@ func (s *SpecificDateScheduler) calculateNext(rt taskdomain.RecurringTask, now t
 	}
 
 	return next, nil
-}
-
-func (s *SpecificDateScheduler) parseConfig(rt taskdomain.RecurringTask) (SpecificDateConfig, error) {
-	var cfg SpecificDateConfig
-	decoder := json.NewDecoder(bytes.NewBuffer(rt.Config))
-	decoder.DisallowUnknownFields()
-
-	if err := decoder.Decode(&cfg); err != nil {
-		return SpecificDateConfig{}, errors.Join(errs.ErrInvalidInput, err)
-	}
-	return cfg, nil
 }
 
 func (s *SpecificDateScheduler) IsDue(rt taskdomain.RecurringTask, now time.Time) (time.Time, bool, error) {

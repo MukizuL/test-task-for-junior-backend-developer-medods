@@ -11,7 +11,7 @@ type IntervalConfig struct {
 	Interval  int             `json:"interval" validate:"required,min=1"`
 }
 
-type OddEvenConfig struct {
+type EvenOddConfig struct {
 	Mode string `json:"mode" validate:"required,oneof=odd even"`
 }
 
